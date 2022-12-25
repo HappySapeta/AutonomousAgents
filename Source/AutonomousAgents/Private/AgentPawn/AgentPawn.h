@@ -8,6 +8,8 @@
 
 // Forward declarations
 class UFloatingPawnMovement;
+class UAIPerceptionComponent;
+class UAutonomousMovementComponent;
 
 
 UCLASS()
@@ -27,4 +29,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	TObjectPtr<UFloatingPawnMovement> FloatingPawnMovement;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Perception")
+	TObjectPtr<UAIPerceptionComponent> PerceptionComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Perception")
+	TObjectPtr<UAutonomousMovementComponent> AutonomousMovement;
 };
