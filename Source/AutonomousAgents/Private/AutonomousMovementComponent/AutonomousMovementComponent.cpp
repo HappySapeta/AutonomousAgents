@@ -26,12 +26,16 @@ void UAutonomousMovementComponent::BeginPlay()
 void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	check(FloatingPawnMovement.Get());
-	check(PerceptionComponent.Get());
-	check(Target.Get());
 	
 	PerformChase();
+}
+
+void UAutonomousMovementComponent::SetTarget(AActor* NewTarget)
+{
+	if(IsValid(NewTarget) && Target != NewTarget)
+	{
+		Target = NewTarget;
+	}
 }
 
 void UAutonomousMovementComponent::PerformChase()
