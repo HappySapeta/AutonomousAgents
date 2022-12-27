@@ -2,9 +2,7 @@
 
 #include "AutonomousMovementComponent.h"
 
-#include "GameFramework/FloatingPawnMovement.h"
-#include "Perception/AIPerceptionComponent.h"
-
+#include <GameFramework/FloatingPawnMovement.h>
 
 // Sets default values for this component's properties
 UAutonomousMovementComponent::UAutonomousMovementComponent()
@@ -16,11 +14,12 @@ UAutonomousMovementComponent::UAutonomousMovementComponent()
 void UAutonomousMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	FloatingPawnMovement = Cast<UFloatingPawnMovement>(GetOwner()->FindComponentByClass(UFloatingPawnMovement::StaticClass()));
-	PerceptionComponent = Cast<UAIPerceptionComponent>(GetOwner()->FindComponentByClass(UAIPerceptionComponent::StaticClass()));
+	Parent = GetOwner();
+	if(Parent.IsValid())
+	{
+		MovementComponent = Cast<UFloatingPawnMovement>(Parent->FindComponentByClass(UFloatingPawnMovement::StaticClass()));
+	}
 }
-
 
 // Called every frame
 void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -30,34 +29,25 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	PerformChase();
 }
 
-void UAutonomousMovementComponent::SetTarget(AActor* NewTarget)
-{
-	if(IsValid(NewTarget) && Target != NewTarget)
-	{
-		Target = NewTarget;
-	}
-}
-
 void UAutonomousMovementComponent::PerformChase()
 {
-	const FVector& CurrentVelocity = FloatingPawnMovement->Velocity;
-	const FVector& TargetDirection = (Target->GetActorLocation() - GetOwner()->GetActorLocation()).GetSafeNormal();
+	if(!Parent.IsValid() || !MovementComponent.IsValid()) return;
+	if(!ChaseTarget.IsValid()) return;
 	
-	const FVector& DesiredVelocity = TargetDirection * FloatingPawnMovement->GetMaxSpeed() - CurrentVelocity;
+	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - Parent->GetActorLocation();
+	DesiredVelocity.Normalize();
+	DesiredVelocity *= MovementComponent->GetMaxSpeed();
 
-	MovementInput += DesiredVelocity;
+	const FVector& SteerInput = DesiredVelocity - MovementComponent->Velocity;
+
+	DrawDebugLine(GetWorld(), Parent->GetActorLocation(), Parent->GetActorLocation() + SteerInput.GetSafeNormal(), FColor::Red, false, 0.05f, 0, 5.0f);
+	MovementComponent->AddInputVector(SteerInput);
 }
 
-void UAutonomousMovementComponent::PerformCohesion()
+void UAutonomousMovementComponent::SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget)
 {
+	if(NewTarget.IsValid() && ChaseTarget != NewTarget)
+	{
+		ChaseTarget = NewTarget;
+	}
 }
-
-void UAutonomousMovementComponent::PerformAlignment()
-{
-}
-
-void UAutonomousMovementComponent::PerformSeparation()
-{
-}
-
-

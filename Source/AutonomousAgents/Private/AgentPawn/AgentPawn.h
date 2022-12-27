@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include <CoreMinimal.h>
+#include <GameFramework/Pawn.h>
+
 #include "AgentPawn.generated.h"
 
 // Forward declarations
@@ -25,13 +26,24 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
+
+	void AlignActorToVelocity(float DeltaSeconds);
+	
 protected:
 
+	UPROPERTY(EditAnywhere, Category = "Target")
+	FName ChaseTargetTag;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Rotation")
+	float VelocityAlignmentSpeed = 1.0f;
+
+protected:
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	TObjectPtr<UFloatingPawnMovement> FloatingPawnMovement;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Perception")
-	TObjectPtr<UAIPerceptionComponent> PerceptionComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Perception")
 	TObjectPtr<UAutonomousMovementComponent> AutonomousMovement;

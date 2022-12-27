@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include <CoreMinimal.h>
+#include <Components/ActorComponent.h>
 #include "AutonomousMovementComponent.generated.h"
 
 // Forward declarations
@@ -27,27 +27,15 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void SetTarget(AActor* NewTarget);
+	void SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget);
 	
-protected:
+private:
 
 	virtual void PerformChase();
 
-	virtual void PerformCohesion();
-
-	virtual void PerformAlignment();
-
-	virtual void PerformSeparation();
-
-protected:
-
-	TWeakObjectPtr<UFloatingPawnMovement> FloatingPawnMovement;
-
-	TWeakObjectPtr<UAIPerceptionComponent> PerceptionComponent;
-	
-	TWeakObjectPtr<AActor> Target;
-
 private:
 
-	FVector MovementInput = FVector::ZeroVector;
+	TWeakObjectPtr<AActor> Parent;
+	TWeakObjectPtr<AActor> ChaseTarget;
+	TWeakObjectPtr<UFloatingPawnMovement> MovementComponent;
 };
