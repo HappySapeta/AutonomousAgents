@@ -37,7 +37,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Target")
 	FName ChaseTargetTag;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Rotation")
+	UPROPERTY(EditDefaultsOnly, Category = "Rotation", meta = (ClampMin = "0.0", ClampMax = "100.0", RangeMin = "0.0", RangeMax = "100.0"))
 	float VelocityAlignmentSpeed = 1.0f;
 
 protected:

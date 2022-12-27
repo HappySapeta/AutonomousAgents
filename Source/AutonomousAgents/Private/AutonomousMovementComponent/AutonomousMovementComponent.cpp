@@ -14,11 +14,7 @@ UAutonomousMovementComponent::UAutonomousMovementComponent()
 void UAutonomousMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	Parent = GetOwner();
-	if(Parent.IsValid())
-	{
-		MovementComponent = Cast<UFloatingPawnMovement>(Parent->FindComponentByClass(UFloatingPawnMovement::StaticClass()));
-	}
+	MovementComponent = Cast<UFloatingPawnMovement>(GetOwner()->FindComponentByClass(UFloatingPawnMovement::StaticClass()));
 }
 
 // Called every frame
@@ -31,16 +27,15 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 
 void UAutonomousMovementComponent::PerformChase()
 {
-	if(!Parent.IsValid() || !MovementComponent.IsValid()) return;
+	if(!MovementComponent.IsValid()) return;
 	if(!ChaseTarget.IsValid()) return;
 	
-	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - Parent->GetActorLocation();
+	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - MovementComponent->GetActorLocation();
 	DesiredVelocity.Normalize();
 	DesiredVelocity *= MovementComponent->GetMaxSpeed();
 
 	const FVector& SteerInput = DesiredVelocity - MovementComponent->Velocity;
 
-	DrawDebugLine(GetWorld(), Parent->GetActorLocation(), Parent->GetActorLocation() + SteerInput.GetSafeNormal(), FColor::Red, false, 0.05f, 0, 5.0f);
 	MovementComponent->AddInputVector(SteerInput);
 }
 

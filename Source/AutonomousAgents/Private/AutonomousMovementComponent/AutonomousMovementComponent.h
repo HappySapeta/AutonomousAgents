@@ -35,7 +35,6 @@ private:
 
 private:
 
-	TWeakObjectPtr<AActor> Parent;
 	TWeakObjectPtr<AActor> ChaseTarget;
 	TWeakObjectPtr<UFloatingPawnMovement> MovementComponent;
 };
