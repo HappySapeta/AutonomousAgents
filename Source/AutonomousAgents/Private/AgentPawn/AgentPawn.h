@@ -45,6 +45,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
 	TObjectPtr<UFloatingPawnMovement> FloatingPawnMovement;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Perception")
+	UPROPERTY(EditDefaultsOnly, Category = "Perception", DuplicateTransient)
 	TObjectPtr<UAutonomousMovementComponent> AutonomousMovement;
 };
