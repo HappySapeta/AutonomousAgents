@@ -2,183 +2,182 @@
 
 #include "AutonomousMovementComponent.h"
 
-#include <AgentPawn/AgentPawn.h>
-#include <GameFramework/FloatingPawnMovement.h>
-#include <Perception/AIPerceptionComponent.h>
+#include "Components/SphereComponent.h"
 
-// Sets default values for this component's properties
 UAutonomousMovementComponent::UAutonomousMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-// Called when the game starts
 void UAutonomousMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	MovementComponent = Cast<UFloatingPawnMovement>(GetOwner()->FindComponentByClass(UFloatingPawnMovement::StaticClass()));
 
-	if(const APawn* Pawn = Cast<APawn>(GetOwner()))
-	{
-		if(const AController* Controller = Pawn->GetController())
-		{
-			PerceptionComponent = Cast<UAIPerceptionComponent>(Controller->FindComponentByClass(UAIPerceptionComponent::StaticClass()));
-		}
-	}
-
-	MovementInput = FVector::ZeroVector;
+	PreviousLocation = GetOwner()->GetActorLocation();
+	SphereComponent = GetOwner()->FindComponentByClass<USphereComponent>();
+	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnEnterDetection);
+	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnExitDetection);
 }
 
-// Called every frame
 void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	SenseOtherAgents();
 	
-	if(CanAgentBecomeSeeker())
+	if(IsAgentLonely())
 	{
-		bIsSeeker = true;
-		PerformChase();
+		SetIsChasing.Broadcast();
+		PerformChaseTarget();
 	}
 	else
 	{
-		bIsSeeker = false;
-		ApplyCohesion();
-		ApplySeparation();
+		SetIsFollowing.Broadcast();
+		PerformFlockCohesion();
+		PerformFlockSeparation();
 	}
-
-	ApplyInput();
+	
+	UpdateActorLocation(DeltaTime);
 }
 
-void UAutonomousMovementComponent::PerformChase()
+void UAutonomousMovementComponent::PerformChaseTarget()
 {
 	if(!ChaseTarget.IsValid()) return;
-	if(!MovementComponent.IsValid()) return;
 
-	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - MovementComponent->GetActorLocation();
+	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - GetOwner()->GetActorLocation();
+	
 	DesiredVelocity.Normalize();
-	DesiredVelocity *= MovementComponent->GetMaxSpeed();
+	DesiredVelocity *= MaxSpeed;
 
-	const FVector& SteerInput = DesiredVelocity - MovementComponent->Velocity;
+	const FVector& ChaseManeuver = DesiredVelocity - PreviousVelocity;
+	
+	AddForce(ChaseManeuver * ChaseForce);
 
-	MovementInput += SteerInput;
+	if(FlockSearchConfig.bDebug)
+	{
+		DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), ChaseTarget->GetActorLocation(), FColor::Emerald, false, 0.01f, 0, 5.0f);
+	}
 }
 
-void UAutonomousMovementComponent::ApplyCohesion()
+void UAutonomousMovementComponent::PerformFlockCohesion()
 {
-	if(!MovementComponent.IsValid()) return;
+	if(!bCohesionEnabled) return;
 	
-	uint32 NumCohesiveAgents = 0;
+	TArray<TWeakObjectPtr<AActor>> OtherAgents;
+	GetAgentsInView(CohesionConfig.MinimumSearchRadius, CohesionConfig.MaximumSearchRadius, CohesionConfig.FOVHalfAngle, OtherAgents);
+
 	FVector HerdLocation = FVector::ZeroVector;
-	FVector HerdVelocity = FVector::ZeroVector;
-
-	for(const AActor* OtherAgent : NearbyAgents)
-	{
-		if(Cast<AAgentPawn>(OtherAgent) == nullptr)
-		{
-			continue;
-		}
-
-		const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
-		
-		HerdLocation += OtherAgentLocation;
-		HerdVelocity += OtherAgent->GetVelocity();
-		++NumCohesiveAgents;
-
-		if(bDebugCohesion)
-		{
-			DrawDebugLine(GetWorld(), MovementComponent->GetActorLocation(), OtherAgentLocation, FColor::Blue, false, 0.02f, 0, 5.0f);
-		}
-	}
-
-	if(NumCohesiveAgents > 0)
-	{
-		HerdLocation /= NumCohesiveAgents;
-		const FVector& DesiredVelocity = (HerdLocation - MovementComponent->GetActorLocation()).GetSafeNormal() * MovementComponent->GetMaxSpeed();
-		const FVector& CohesionManeuver = DesiredVelocity - MovementComponent->Velocity;
-		MovementInput += CohesionManeuver * CohesionBias;
-
-		HerdVelocity /= NumCohesiveAgents;
-		const FVector& AlignmentManeuver = HerdVelocity.GetSafeNormal() * MovementComponent->MaxSpeed - MovementComponent->Velocity;
-		MovementInput += AlignmentManeuver * AlignmentBias;
-	}
-}
-
-void UAutonomousMovementComponent::ApplySeparation()
-{
-	if(!MovementComponent.IsValid()) return;
 	
-	uint32 NumAvoidableAgents = 0;
-	FVector AvoidanceVector = FVector::ZeroVector;
-	
-	for(const AActor* OtherAgent : NearbyAgents)
+	if(OtherAgents.Num() > 0)
 	{
-		if(Cast<AAgentPawn>(OtherAgent) == nullptr)
+		for(const TWeakObjectPtr<AActor>& OtherAgent : OtherAgents)
 		{
-			continue;
-		}
-
-		const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
-		
-		if(IsAgentInSpecifiedViewCone(OtherAgentLocation, SeparationSightRadius, SeparationSightHalfFOV))
-		{
-			FVector OtherAgentVector = MovementComponent->GetActorLocation() - OtherAgentLocation;
-			const float OtherAgentDistance = OtherAgentVector.Length();
-			OtherAgentVector = OtherAgentVector.GetSafeNormal() / OtherAgentDistance;
-			AvoidanceVector += OtherAgentVector;
+			const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
+			HerdLocation += OtherAgentLocation;
 			
-			++NumAvoidableAgents;
-
-			if(bDebugSeparation)
+			if(CohesionConfig.bDebug)
 			{
-				DrawDebugLine(GetWorld(), MovementComponent->GetActorLocation(), OtherAgentLocation, FColor::Red, false, 0.02f, 0, 5.0f);
+				DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), OtherAgentLocation, FColor::Blue, false, 0.02f, 0, 5.0f);
 			}
 		}
+
+		HerdLocation /= OtherAgents.Num();
+		const FVector& DesiredVelocity = (HerdLocation - GetOwner()->GetActorLocation()).GetSafeNormal() * MaxSpeed;
+		const FVector& CohesionManeuver = DesiredVelocity - PreviousVelocity;
+		AddForce(CohesionManeuver * CohesionForce);
 	}
+}
+
+void UAutonomousMovementComponent::PerformFlockSeparation()
+{
+	if(!bSeparationEnabled)
+	{
+		return;
+	}
+
+	TArray<TWeakObjectPtr<AActor>> OtherAgents;
+	GetAgentsInView(SeparationConfig.MinimumSearchRadius, SeparationConfig.MaximumSearchRadius , SeparationConfig.FOVHalfAngle, OtherAgents);
+	
+	const int NumAvoidableAgents = OtherAgents.Num();
+	
+	FVector AvoidanceVector = FVector::ZeroVector;
 
 	if(NumAvoidableAgents > 0)
 	{
+		for(const TWeakObjectPtr<AActor>& OtherAgent : OtherAgents)
+		{
+			const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
+		
+			FVector OtherAgentVector = GetOwner()->GetActorLocation() - OtherAgentLocation;
+			const float OtherAgentDistance = OtherAgentVector.Length();
+			
+			OtherAgentVector = OtherAgentVector.GetSafeNormal() / OtherAgentDistance;
+			AvoidanceVector += OtherAgentVector;
+			
+			if(SeparationConfig.bDebug)
+			{
+				DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), OtherAgentLocation, FColor::Red, false, 0.02f, 0, 5.0f);
+			}
+		}
+
 		AvoidanceVector /= NumAvoidableAgents;
-		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MovementComponent->GetMaxSpeed();
+		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
 
-		const FVector& SeparationManeuver = AvoidanceVector - MovementComponent->Velocity;
-		MovementInput += SeparationManeuver * SeparationBias;
+		const FVector& SeparationManeuver = AvoidanceVector - PreviousVelocity;
+		AddForce(SeparationManeuver * SeparationForce);
 	}
 }
 
-void UAutonomousMovementComponent::SenseOtherAgents()
+void UAutonomousMovementComponent::AddForce(const FVector& Force)
 {
-	if (PerceptionComponent.IsValid())
+	MovementForce += Force;
+}
+
+void UAutonomousMovementComponent::UpdateActorLocation(float DeltaTime)
+{
+	if(bLimitForce && MovementForce.Length() > MaxForce)
 	{
-		NearbyAgents.Reset();
-		//PerceptionComponent->RequestStimuliListenerUpdate();
-		PerceptionComponent->GetCurrentlyPerceivedActors(PerceptionComponent->GetDominantSense(), NearbyAgents);
+		MovementForce = MovementForce.GetSafeNormal() * MaxForce;
+	}
+	
+	const FVector& NewVelocity = PreviousVelocity + MovementForce * DeltaTime;
+	const FVector& NewLocation = PreviousLocation + NewVelocity * DeltaTime;
+	GetOwner()->SetActorLocation(NewLocation);
+	
+	MovementForce = FVector::ZeroVector;
+	PreviousVelocity = NewVelocity;
+	PreviousLocation = NewLocation;
+}
+
+void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, TArray<TWeakObjectPtr<AActor>>& AgentsInView) const
+{
+	AgentsInView.Reset();
+	for(const TWeakObjectPtr<AActor>& Agent : SensedAgents)
+	{
+		if(Agent.IsValid() && IsAgentInSpecifiedViewCone(Agent->GetActorLocation(), MinimumSearchRadius, MaximumSearchRadius, FOVHalfAngle))
+		{
+			AgentsInView.Add(Agent);
+		}
 	}
 }
 
-bool UAutonomousMovementComponent::CanAgentBecomeSeeker() const
+bool UAutonomousMovementComponent::IsAgentLonely() const
 {
-	return NearbyAgents.Num() == 0;
+	TArray<TWeakObjectPtr<AActor>> OtherAgents;
+	GetAgentsInView(FlockSearchConfig.MinimumSearchRadius, FlockSearchConfig.MaximumSearchRadius, FlockSearchConfig.FOVHalfAngle, OtherAgents);
+
+	return OtherAgents.Num() == 0;
 }
 
-bool UAutonomousMovementComponent::IsAgentInSpecifiedViewCone(const FVector& OtherAgentLocation, float Radius, float HalfFOV) const
+bool UAutonomousMovementComponent::IsAgentInSpecifiedViewCone(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const
 {
-	const FVector& OtherAgentVector = OtherAgentLocation - MovementComponent->GetActorLocation();
+	const FVector& OtherAgentVector = OtherAgentLocation - GetOwner()->GetActorLocation();
 
 	const FVector& Forward = GetOwner()->GetActorForwardVector();
 	const float DotProduct = OtherAgentVector.GetSafeNormal().Dot(Forward); 
-	const float Angle = FMath::Abs(FMath::RadiansToDegrees(FMath::Acos(DotProduct)));
-	return OtherAgentVector.Length() < Radius && Angle < HalfFOV;
-}
 
-void UAutonomousMovementComponent::ApplyInput()
-{
-	if(MovementComponent.IsValid())
-	{
-		MovementComponent->AddInputVector(MovementInput.GetSafeNormal());
-		MovementInput = FVector::ZeroVector;
-	}
+	const float Angle = FMath::Abs(FMath::RadiansToDegrees(FMath::Acos(DotProduct)));
+	const float Distance = OtherAgentVector.Length();
+	
+	return Distance > MinimumSearchRadius && Distance < MaximumSearchRadius && Angle < HalfFOV;
 }
 
 void UAutonomousMovementComponent::SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget)
@@ -189,7 +188,23 @@ void UAutonomousMovementComponent::SetChaseTarget(const TWeakObjectPtr<AActor>& 
 	}
 }
 
-bool UAutonomousMovementComponent::IsSeeker() const
+void UAutonomousMovementComponent::OnEnterDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	return bIsSeeker;
+	if(IsValid(OtherActor) && OtherActor->Tags.Contains(AgentsTag))
+	{
+		if(!SensedAgents.Contains(OtherActor))
+		{
+			SensedAgents.Add(OtherActor);
+		}
+	}
+}
+
+void UAutonomousMovementComponent::OnExitDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if(SensedAgents.Contains(OtherActor))
+	{
+		SensedAgents.Remove(OtherActor);
+	}
 }

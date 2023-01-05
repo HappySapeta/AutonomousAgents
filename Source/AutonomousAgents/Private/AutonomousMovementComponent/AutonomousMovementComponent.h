@@ -4,87 +4,120 @@
 
 #include <CoreMinimal.h>
 #include <Components/ActorComponent.h>
+
+#include "FlockingSense_Config/FSense_Config.h"
 #include "AutonomousMovementComponent.generated.h"
 
 // Forward declarations
+class USphereComponent;
 class UFloatingPawnMovement;
 class UAIPerceptionComponent;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class AUTONOMOUSAGENTS_API UAutonomousMovementComponent : public UActorComponent
 {
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSimpleDynamicDelegate);
+	
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
+	
 	UAutonomousMovementComponent();
 
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
 public:
-	// Called every frame
+	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 	void SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget);
 
-	bool IsSeeker() const;
-	
+protected:
+
+	virtual void BeginPlay() override;
+
+	void AddForce(const FVector& Force);
+
 private:
 
-	virtual void PerformChase();
+	virtual void PerformChaseTarget();
 	
-	virtual void ApplyCohesion();
+	virtual void PerformFlockCohesion();
 
-	virtual void ApplySeparation();
- 
-	void SenseOtherAgents();
+	virtual void PerformFlockSeparation();
 	
-	bool IsAgentInSpecifiedViewCone(const FVector& OtherAgentLocation, float Radius, float HalfFOV) const;
+	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, TArray<TWeakObjectPtr<AActor>>& AgentsInView) const;
 	
-	bool CanAgentBecomeSeeker() const;
+	bool IsAgentInSpecifiedViewCone(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const;
 	
-	void ApplyInput();
+	bool IsAgentLonely() const;
+	
+	void UpdateActorLocation(float DeltaTime);
 
 protected:
 
-#pragma region Cohesion
-	UPROPERTY(EditAnywhere, Category = "Cohesion")
-	float CohesionBias = 1.0f;
+	UPROPERTY(BlueprintAssignable)
+	FSimpleDynamicDelegate SetIsFollowing;
 
-	UPROPERTY(EditAnywhere, Category = "Alignment", meta = (DisplayAfter="CohesionBias"))
-	float AlignmentBias = 1.0f;
-#pragma endregion
+	UPROPERTY(BlueprintAssignable)
+	FSimpleDynamicDelegate SetIsChasing;
 
-#pragma region Separation AI Sight Config
-	UPROPERTY(EditAnywhere, Category = "Separation", meta = (DisplayAfter="AlignmentBias"))
-	float SeparationSightRadius = 100.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Separation", meta = (DisplayAfter="AlignmentBias"))
-	float SeparationSightHalfFOV = 120.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Separation", meta = (DisplayAfter="AlignmentBias"))
-	float SeparationBias = 1.0f;
-#pragma endregion
-
-protected:
-
-	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDebugCohesion = false;
-
-	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDebugSeparation = false;
-	
 private:
 
-	FVector MovementInput;
+	UFUNCTION()
+	void OnEnterDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	TArray<AActor*> NearbyAgents;
+	UFUNCTION()
+	void OnExitDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Force Settings")
+	float MaxSpeed = 100.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Force Settings")
+	bool bLimitForce = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Force Settings", meta = (EditCondition = "bLimitForce", EditConditionHides = "true"))
+	float MaxForce = 100.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Common")
+	FName AgentsTag;
+
+protected:
+	
+	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "AgentsTag"))
+	FSense_Config FlockSearchConfig;
+
+	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "FlockSearchConfig"))
+	float ChaseForce;
+	
+	UPROPERTY(EditAnywhere, Category = "Cohesion Settings", meta = (DisplayAfter = "ChaseForce"))
+	bool bCohesionEnabled = false;
+
+	UPROPERTY(EditAnywhere, Category = "Cohesion Settings",  meta = (EditCondition = "bCohesionEnabled", EditConditionHides = "true", DisplayAfter = "bCohesionEnabled"))
+	FSense_Config CohesionConfig;
+
+	UPROPERTY(EditAnywhere, Category = "Cohesion Settings",  meta = (EditCondition = "bCohesionEnabled", EditConditionHides = "true", DisplayAfter = "CohesionConfig"))
+	float CohesionForce;
+	
+	UPROPERTY(EditAnywhere, Category = "Separation Settings", meta = (DisplayAfter = "CohesionForce"))
+	bool bSeparationEnabled = false;
+
+	UPROPERTY(EditAnywhere, Category = "Separation Settings",  meta = (EditCondition = "bSeparationEnabled", EditConditionHides = "true", DisplayAfter = "bSeparationEnabled"))
+	FSense_Config SeparationConfig;
+
+	UPROPERTY(EditAnywhere, Category = "Separation Settings",  meta = (EditCondition = "bSeparationEnabled", EditConditionHides = "true", DisplayAfter = "SeparationConfig"))
+	float SeparationForce;
+	
+private:
+	
+	UPROPERTY(Transient)
+	TArray<AActor*> SensedAgents;
 	
 	TWeakObjectPtr<AActor> ChaseTarget;
-	TWeakObjectPtr<UFloatingPawnMovement> MovementComponent;
-	TWeakObjectPtr<UAIPerceptionComponent> PerceptionComponent;
+	TWeakObjectPtr<USphereComponent> SphereComponent;
 
-	bool bIsSeeker = false;
+	FVector PreviousLocation = FVector::ZeroVector;
+	FVector PreviousVelocity = FVector::ZeroVector;
+	FVector MovementForce = FVector::ZeroVector;
 };

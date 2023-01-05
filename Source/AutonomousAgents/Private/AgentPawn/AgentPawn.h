@@ -7,8 +7,9 @@
 
 #include "AgentPawn.generated.h"
 
-// Forward declarations
+class USphereComponent;
 class UFloatingPawnMovement;
+// Forward declarations
 class UAIPerceptionComponent;
 class UAutonomousMovementComponent;
 
@@ -19,19 +20,23 @@ class AAgentPawn : public APawn
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
+	
 	AAgentPawn();
-
+	
+	virtual FVector GetVelocity() const override;
+	
 protected:
-	// Called when the game starts or when spawned
+	
 	virtual void BeginPlay() override;
-
+	
 	virtual void Tick(float DeltaSeconds) override;
 
 private:
 
 	void AlignActorToVelocity(float DeltaSeconds);
-	
+
+	void CalculateCurrentVelocity(float DeltaSeconds);
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Target")
@@ -42,9 +47,15 @@ protected:
 
 protected:
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Movement")
-	TObjectPtr<UFloatingPawnMovement> FloatingPawnMovement;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Perception", DuplicateTransient)
+	UPROPERTY(EditDefaultsOnly, Category = "Movement", DuplicateTransient)
 	TObjectPtr<UAutonomousMovementComponent> AutonomousMovement;
+
+	UPROPERTY(EditAnywhere, Category = "Detection")
+	TObjectPtr<USphereComponent> SphereComponent;
+	
+private:
+
+	FVector CurrentVelocity = FVector::ZeroVector;
+	FVector PreviousLocation;
 };
+

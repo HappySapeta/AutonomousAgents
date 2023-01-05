@@ -3,21 +3,27 @@
 #include "AgentPawn/AgentPawn.h"
 #include "AutonomousMovementComponent/AutonomousMovementComponent.h"
 
-#include <GameFramework/FloatingPawnMovement.h>
 #include <Kismet/GameplayStatics.h>
+#include <Kismet/KismetMathLibrary.h>
 
-#include "Kismet/KismetMathLibrary.h"
+#include "Components/SphereComponent.h"
 
 // Sets default values
 AAgentPawn::AAgentPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
-	FloatingPawnMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingPawnMovement"));
 	AutonomousMovement = CreateDefaultSubobject<UAutonomousMovementComponent>(TEXT("AutonomousMovementComponent"));
+	
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
+	SetRootComponent(SphereComponent);
 }
 
-// Called when the game starts or when spawned
+FVector AAgentPawn::GetVelocity() const
+{
+	return CurrentVelocity;
+}
+
 void AAgentPawn::BeginPlay()
 {
 	Super::BeginPlay();
@@ -32,21 +38,32 @@ void AAgentPawn::BeginPlay()
 			AutonomousMovement->SetChaseTarget(ChaseTargets[RandomIndex]);
 		}
 	}
+
+	PreviousLocation = GetActorLocation();
 }
 
 void AAgentPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
+
+	CalculateCurrentVelocity(DeltaSeconds);
 	AlignActorToVelocity(DeltaSeconds);
 }
 
 void AAgentPawn::AlignActorToVelocity(float DeltaSeconds)
 {
-	const FVector& LookAtDirection = FloatingPawnMovement->Velocity.GetSafeNormal();
-	const FRotator& LookAtRotation = UKismetMathLibrary::MakeRotFromX(LookAtDirection);
+	const FVector& LookAtDirection = GetVelocity().GetSafeNormal();
+	const FRotator& TargetRotation = UKismetMathLibrary::MakeRotFromX(LookAtDirection);
 
-	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), LookAtRotation, DeltaSeconds, VelocityAlignmentSpeed);
+	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, VelocityAlignmentSpeed);
 	
 	SetActorRotation(DeltaRotation);
+}
+
+void AAgentPawn::CalculateCurrentVelocity(float DeltaSeconds)
+{
+	const FVector& CurrentLocation = GetActorLocation();
+	
+	CurrentVelocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
+	PreviousLocation = CurrentLocation;
 }
