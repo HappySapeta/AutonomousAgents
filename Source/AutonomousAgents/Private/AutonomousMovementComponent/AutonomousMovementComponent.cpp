@@ -33,9 +33,10 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		SetIsFollowing.Broadcast();
 		PerformFlockCohesion();
 		PerformFlockSeparation();
+		PerformFlockAlignment();
 	}
 	
-	UpdateActorLocation(DeltaTime);
+	PhysicsUpdate(DeltaTime);
 }
 
 void UAutonomousMovementComponent::PerformChaseTarget()
@@ -47,11 +48,11 @@ void UAutonomousMovementComponent::PerformChaseTarget()
 	DesiredVelocity.Normalize();
 	DesiredVelocity *= MaxSpeed;
 
-	const FVector& ChaseManeuver = DesiredVelocity - PreviousVelocity;
+	const FVector& ChaseManeuver = DesiredVelocity - GetOwner()->GetVelocity();
 	
-	AddForce(ChaseManeuver * ChaseForce);
+	AddForce(ChaseManeuver * ChaseConfig.Influence);
 
-	if(FlockSearchConfig.bDebug)
+	if(ChaseConfig.bDebug)
 	{
 		DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), ChaseTarget->GetActorLocation(), FColor::Emerald, false, 0.01f, 0, 5.0f);
 	}
@@ -81,17 +82,14 @@ void UAutonomousMovementComponent::PerformFlockCohesion()
 
 		HerdLocation /= OtherAgents.Num();
 		const FVector& DesiredVelocity = (HerdLocation - GetOwner()->GetActorLocation()).GetSafeNormal() * MaxSpeed;
-		const FVector& CohesionManeuver = DesiredVelocity - PreviousVelocity;
-		AddForce(CohesionManeuver * CohesionForce);
+		const FVector& CohesionManeuver = DesiredVelocity - GetOwner()->GetVelocity();
+		AddForce(CohesionManeuver * CohesionConfig.Influence);
 	}
 }
 
 void UAutonomousMovementComponent::PerformFlockSeparation()
 {
-	if(!bSeparationEnabled)
-	{
-		return;
-	}
+	if(!bSeparationEnabled) return;
 
 	TArray<TWeakObjectPtr<AActor>> OtherAgents;
 	GetAgentsInView(SeparationConfig.MinimumSearchRadius, SeparationConfig.MaximumSearchRadius , SeparationConfig.FOVHalfAngle, OtherAgents);
@@ -121,8 +119,38 @@ void UAutonomousMovementComponent::PerformFlockSeparation()
 		AvoidanceVector /= NumAvoidableAgents;
 		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
 
-		const FVector& SeparationManeuver = AvoidanceVector - PreviousVelocity;
-		AddForce(SeparationManeuver * SeparationForce);
+		const FVector& SeparationManeuver = AvoidanceVector - GetOwner()->GetVelocity();
+		AddForce(SeparationManeuver * SeparationConfig.Influence);
+	}
+}
+
+void UAutonomousMovementComponent::PerformFlockAlignment()
+{
+	if(!bAlignmentEnabled) return;
+
+	TArray<TWeakObjectPtr<AActor>> OtherAgents;
+	GetAgentsInView(AlignmentConfig.MinimumSearchRadius, AlignmentConfig.MaximumSearchRadius , AlignmentConfig.FOVHalfAngle, OtherAgents);
+	
+	const int NumFlockAgents = OtherAgents.Num();
+	FVector AverageFlockVelocity = FVector::ZeroVector;
+	
+	if(NumFlockAgents > 0)
+	{
+		for(const TWeakObjectPtr<AActor>& OtherAgent : OtherAgents)
+		{
+			AverageFlockVelocity += OtherAgent->GetVelocity();
+			
+			if(AlignmentConfig.bDebug)
+			{
+				DrawDebugLine(GetWorld(), GetOwner()->GetActorLocation(), OtherAgent->GetActorLocation(), FColor::Yellow, false, 0.02f, 0, 5.0f);
+			}
+		}
+
+		AverageFlockVelocity /= NumFlockAgents;
+		AverageFlockVelocity = AverageFlockVelocity.GetSafeNormal() * MaxSpeed;
+
+		const FVector& AlignmentManeuver = AverageFlockVelocity - GetOwner()->GetVelocity();
+		AddForce(AlignmentManeuver * AlignmentConfig.Influence);
 	}
 }
 
@@ -131,7 +159,7 @@ void UAutonomousMovementComponent::AddForce(const FVector& Force)
 	MovementForce += Force;
 }
 
-void UAutonomousMovementComponent::UpdateActorLocation(float DeltaTime)
+void UAutonomousMovementComponent::PhysicsUpdate(float DeltaTime)
 {
 	if(bLimitForce && MovementForce.Length() > MaxForce)
 	{
@@ -162,7 +190,7 @@ void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, fl
 bool UAutonomousMovementComponent::IsAgentLonely() const
 {
 	TArray<TWeakObjectPtr<AActor>> OtherAgents;
-	GetAgentsInView(FlockSearchConfig.MinimumSearchRadius, FlockSearchConfig.MaximumSearchRadius, FlockSearchConfig.FOVHalfAngle, OtherAgents);
+	GetAgentsInView(ChaseConfig.MinimumSearchRadius, ChaseConfig.MaximumSearchRadius, ChaseConfig.FOVHalfAngle, OtherAgents);
 
 	return OtherAgents.Num() == 0;
 }

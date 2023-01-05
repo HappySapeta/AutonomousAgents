@@ -44,6 +44,8 @@ private:
 	virtual void PerformFlockCohesion();
 
 	virtual void PerformFlockSeparation();
+
+	virtual void PerformFlockAlignment();
 	
 	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, TArray<TWeakObjectPtr<AActor>>& AgentsInView) const;
 	
@@ -51,10 +53,13 @@ private:
 	
 	bool IsAgentLonely() const;
 	
-	void UpdateActorLocation(float DeltaTime);
+	void PhysicsUpdate(float DeltaTime);
 
 protected:
 
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bDebugVelocity = false;
+	
 	UPROPERTY(BlueprintAssignable)
 	FSimpleDynamicDelegate SetIsFollowing;
 
@@ -86,28 +91,25 @@ protected:
 protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "AgentsTag"))
-	FSense_Config FlockSearchConfig;
-
-	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "FlockSearchConfig"))
-	float ChaseForce;
+	FSense_Config ChaseConfig;
 	
-	UPROPERTY(EditAnywhere, Category = "Cohesion Settings", meta = (DisplayAfter = "ChaseForce"))
+	UPROPERTY(EditAnywhere, Category = "Cohesion Settings", meta = (DisplayAfter = "ChaseConfig"))
 	bool bCohesionEnabled = false;
 
 	UPROPERTY(EditAnywhere, Category = "Cohesion Settings",  meta = (EditCondition = "bCohesionEnabled", EditConditionHides = "true", DisplayAfter = "bCohesionEnabled"))
 	FSense_Config CohesionConfig;
-
-	UPROPERTY(EditAnywhere, Category = "Cohesion Settings",  meta = (EditCondition = "bCohesionEnabled", EditConditionHides = "true", DisplayAfter = "CohesionConfig"))
-	float CohesionForce;
 	
-	UPROPERTY(EditAnywhere, Category = "Separation Settings", meta = (DisplayAfter = "CohesionForce"))
+	UPROPERTY(EditAnywhere, Category = "Separation Settings", meta = (DisplayAfter = "CohesionConfig"))
 	bool bSeparationEnabled = false;
 
 	UPROPERTY(EditAnywhere, Category = "Separation Settings",  meta = (EditCondition = "bSeparationEnabled", EditConditionHides = "true", DisplayAfter = "bSeparationEnabled"))
 	FSense_Config SeparationConfig;
 
-	UPROPERTY(EditAnywhere, Category = "Separation Settings",  meta = (EditCondition = "bSeparationEnabled", EditConditionHides = "true", DisplayAfter = "SeparationConfig"))
-	float SeparationForce;
+	UPROPERTY(EditAnywhere, Category = "Alignment Settings", meta = (DisplayAfter = "SeparationConfig"))
+	bool bAlignmentEnabled = false;
+
+	UPROPERTY(EditAnywhere, Category = "Alignment Settings",  meta = (EditCondition = "bAlignmentEnabled", EditConditionHides = "true", DisplayAfter = "bAlignmentEnabled"))
+	FSense_Config AlignmentConfig;
 	
 private:
 	
