@@ -5,12 +5,19 @@
 #include <CoreMinimal.h>
 #include <Components/ActorComponent.h>
 
-#include "FlockingSense_Config/FSense_Config.h"
+#include "DataTypes/FSense_Config.h"
 #include "AutonomousMovementComponent.generated.h"
 
 // Forward declarations
 class USphereComponent;
 
+/**
+ * AutonomousMovementComponent applies a series of
+ * Craig Reynold's autonomous steering behaviour on an actor.
+ *
+ * It uses overlap triggers to sense and retrieve information about other agents
+ * do calculate the actor's movement velocity.
+ */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class AUTONOMOUSAGENTS_API UAutonomousMovementComponent : public UActorComponent
 {
