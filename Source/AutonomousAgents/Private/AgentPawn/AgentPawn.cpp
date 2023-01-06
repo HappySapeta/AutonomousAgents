@@ -5,8 +5,7 @@
 
 #include <Kismet/GameplayStatics.h>
 #include <Kismet/KismetMathLibrary.h>
-
-#include "Components/SphereComponent.h"
+#include <Components/SphereComponent.h>
 
 // Sets default values
 AAgentPawn::AAgentPawn()
@@ -14,19 +13,15 @@ AAgentPawn::AAgentPawn()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	AutonomousMovement = CreateDefaultSubobject<UAutonomousMovementComponent>(TEXT("AutonomousMovementComponent"));
-	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	SetRootComponent(SphereComponent);
-}
-
-FVector AAgentPawn::GetVelocity() const
-{
-	return CurrentVelocity;
 }
 
 void AAgentPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// TODO : Delegate target finding task to AIController.
 	if(AutonomousMovement)
 	{
 		TArray<AActor*> ChaseTargets;
@@ -66,4 +61,9 @@ void AAgentPawn::CalculateCurrentVelocity(float DeltaSeconds)
 	
 	CurrentVelocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
 	PreviousLocation = CurrentLocation;
+}
+
+FVector AAgentPawn::GetVelocity() const
+{
+	return CurrentVelocity;
 }
