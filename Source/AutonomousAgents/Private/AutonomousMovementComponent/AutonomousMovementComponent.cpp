@@ -14,6 +14,7 @@ void UAutonomousMovementComponent::BeginPlay()
 	Super::BeginPlay();
 
 	PreviousLocation = GetOwner()->GetActorLocation();
+	
 	SphereComponent = GetOwner()->FindComponentByClass<USphereComponent>();
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnEnterDetection);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnExitDetection);
@@ -37,6 +38,24 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	}
 	
 	PhysicsUpdate(DeltaTime);
+}
+
+void UAutonomousMovementComponent::AddForce(const FVector& Force)
+{
+	MovementForce += Force;
+}
+
+void UAutonomousMovementComponent::PhysicsUpdate(float DeltaTime)
+{
+	const FVector& NewVelocity = PreviousVelocity + MovementForce * DeltaTime;
+	const FVector& NewLocation = PreviousLocation + NewVelocity * DeltaTime;
+	GetOwner()->SetActorLocation(NewLocation);
+	
+	MovementForce = FVector::ZeroVector;
+
+	// GetOwner()->GetVelocity() is stale compared to NewVelocity. So previous velocity is assigned to be equal to NewVelocity.
+	PreviousVelocity = NewVelocity;
+	PreviousLocation = NewLocation;
 }
 
 void UAutonomousMovementComponent::PerformChaseTarget()
@@ -154,33 +173,12 @@ void UAutonomousMovementComponent::PerformFlockAlignment()
 	}
 }
 
-void UAutonomousMovementComponent::AddForce(const FVector& Force)
-{
-	MovementForce += Force;
-}
-
-void UAutonomousMovementComponent::PhysicsUpdate(float DeltaTime)
-{
-	if(bLimitForce && MovementForce.Length() > MaxForce)
-	{
-		MovementForce = MovementForce.GetSafeNormal() * MaxForce;
-	}
-	
-	const FVector& NewVelocity = PreviousVelocity + MovementForce * DeltaTime;
-	const FVector& NewLocation = PreviousLocation + NewVelocity * DeltaTime;
-	GetOwner()->SetActorLocation(NewLocation);
-	
-	MovementForce = FVector::ZeroVector;
-	PreviousVelocity = NewVelocity;
-	PreviousLocation = NewLocation;
-}
-
 void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, TArray<TWeakObjectPtr<AActor>>& AgentsInView) const
 {
 	AgentsInView.Reset();
 	for(const TWeakObjectPtr<AActor>& Agent : SensedAgents)
 	{
-		if(Agent.IsValid() && IsAgentInSpecifiedViewCone(Agent->GetActorLocation(), MinimumSearchRadius, MaximumSearchRadius, FOVHalfAngle))
+		if(Agent.IsValid() && IsPointInFOV(Agent->GetActorLocation(), MinimumSearchRadius, MaximumSearchRadius, FOVHalfAngle))
 		{
 			AgentsInView.Add(Agent);
 		}
@@ -195,7 +193,7 @@ bool UAutonomousMovementComponent::IsAgentLonely() const
 	return OtherAgents.Num() == 0;
 }
 
-bool UAutonomousMovementComponent::IsAgentInSpecifiedViewCone(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const
+bool UAutonomousMovementComponent::IsPointInFOV(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const
 {
 	const FVector& OtherAgentVector = OtherAgentLocation - GetOwner()->GetActorLocation();
 
