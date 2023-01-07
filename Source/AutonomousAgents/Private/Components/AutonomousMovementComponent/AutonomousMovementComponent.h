@@ -5,10 +5,12 @@
 #include <CoreMinimal.h>
 #include <Components/ActorComponent.h>
 
+#include "DataTypes/CommonTypes.h"
 #include "DataTypes/FSense_Config.h"
 #include "AutonomousMovementComponent.generated.h"
 
 // Forward declarations
+class UBaseAutonomousBehaviour;
 class USphereComponent;
 
 /**
@@ -36,38 +38,23 @@ public:
 	// 2. Update physics.
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
-	void SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget);
+	void SetChaseTarget(const FWeakActorPtr& NewTarget);
 
 protected:
 
 	// 1. Initialize variables.
 	virtual void BeginPlay() override;
 
-	// Add Force vector to net Movement Force.
-	void AddForce(const FVector& Force);
-
 	// Get all agents that fall in the specified view cone.
-	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, TArray<TWeakObjectPtr<AActor>>& AgentsInView) const;
+	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const;
 
 	// Check if a point in 3D space falls in a cone defined by its radii and FOV Half-angle.
 	bool IsPointInFOV(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const;
 
 	// Is the agent not surrounded by other agents.
-	bool IsAgentLonely() const;
+	bool CanAgentLead() const;
 
 private:
-
-	// Directly seek the chase target.
-	virtual void PerformChaseTarget();
-
-	// Move closer to flock
-	virtual void PerformFlockCohesion();
-
-	// Move away from other agents.
-	virtual void PerformFlockSeparation();
-
-	// Move along the direction of the flock.
-	virtual void PerformFlockAlignment();
 
 	// Calculate velocity and new location from the net Movement Force.
 	virtual void PhysicsUpdate(float DeltaTime);
@@ -106,39 +93,22 @@ protected:
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
 	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "AgentsTag"))
-	FSense_Config ChaseConfig;
+	FSense_Config LeaderCheckConfig;
+	
+protected:
 
-	// Toggle cohesion.
-	UPROPERTY(EditAnywhere, Category = "Cohesion Settings", meta = (DisplayAfter = "ChaseConfig"))
-	bool bCohesionEnabled = false;
-
-	// Defines configuration used to detect other agents toward whom this agent will move.
-	UPROPERTY(EditAnywhere, Category = "Cohesion Settings",  meta = (EditCondition = "bCohesionEnabled", EditConditionHides = "true", DisplayAfter = "bCohesionEnabled"))
-	FSense_Config CohesionConfig;
-
-	// Toggle separation.
-	UPROPERTY(EditAnywhere, Category = "Separation Settings", meta = (DisplayAfter = "CohesionConfig"))
-	bool bSeparationEnabled = false;
-
-	// Defines configuration used to detect other agents that this agent must avoid. Typically it defines a wider and shorter FOV.
-	UPROPERTY(EditAnywhere, Category = "Separation Settings",  meta = (EditCondition = "bSeparationEnabled", EditConditionHides = "true", DisplayAfter = "bSeparationEnabled"))
-	FSense_Config SeparationConfig;
-
-	// Toggle alignment.
-	UPROPERTY(EditAnywhere, Category = "Alignment Settings", meta = (DisplayAfter = "SeparationConfig"))
-	bool bAlignmentEnabled = false;
-
-	// Defines configuration used to detect other agents in whose direction this agent must move.
-	UPROPERTY(EditAnywhere, Category = "Alignment Settings",  meta = (EditCondition = "bAlignmentEnabled", EditConditionHides = "true", DisplayAfter = "bAlignmentEnabled"))
-	FSense_Config AlignmentConfig;
+	UPROPERTY(EditAnywhere, Category = "Seeking", meta = (DisplayAfter = "ChaseConfig"))
+	TArray<TSubclassOf<UBaseAutonomousBehaviour>> SeekingBehaviours;
+	
+	UPROPERTY(EditAnywhere, Category = "Flocking", meta = (DisplayAfter = "SeekingBehaviours"))
+	TArray<TSubclassOf<UBaseAutonomousBehaviour>> FlockingBehaviours;
 	
 private:
 
 	// Other agents in the vicinity.
-	UPROPERTY(Transient)
-	TArray<AActor*> SensedAgents;
+	FActorArray SensedAgents;
 	
-	TWeakObjectPtr<AActor> ChaseTarget;
+	FWeakActorPtr ChaseTarget;
 	TWeakObjectPtr<USphereComponent> SphereComponent;
 
 	FVector PreviousLocation = FVector::ZeroVector;
