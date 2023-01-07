@@ -62,5 +62,5 @@ inline bool UBaseAutonomousBehaviour::IsPointInFOV(const FVector& EyeLocation, c
 	const float DotProduct = PointVector.GetSafeNormal().Dot(LookingDirection.GetSafeNormal());
 	const float Angle = FMath::Abs(FMath::RadiansToDegrees(FMath::Acos(DotProduct)));
 	
-	return Distance > SearchConfig.MinimumSearchRadius && Distance < SearchConfig.MaximumSearchRadius && Angle < SearchConfig.FOVHalfAngle;
+	return Distance > SearchConfig.SearchRadius.GetLowerBoundValue() && Distance < SearchConfig.SearchRadius.GetUpperBoundValue() && Angle < SearchConfig.FOVHalfAngle;
 }

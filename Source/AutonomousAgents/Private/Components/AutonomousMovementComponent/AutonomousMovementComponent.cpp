@@ -80,7 +80,9 @@ void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, fl
 bool UAutonomousMovementComponent::CanAgentLead() const
 {
 	FActorArray OtherAgents;
-	GetAgentsInView(LeaderCheckConfig.MinimumSearchRadius, LeaderCheckConfig.MaximumSearchRadius, LeaderCheckConfig.FOVHalfAngle, OtherAgents);
+	GetAgentsInView(
+		LeaderCheckConfig.SearchRadius.GetLowerBoundValue(),
+		LeaderCheckConfig.SearchRadius.GetUpperBoundValue(), LeaderCheckConfig.FOVHalfAngle, OtherAgents);
 
 	return OtherAgents.Num() == 0;
 }
