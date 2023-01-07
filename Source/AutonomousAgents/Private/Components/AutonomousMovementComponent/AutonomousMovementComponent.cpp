@@ -1,6 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AutonomousMovementComponent.h"
+#include "Common/Utility.h"
 #include "Behaviours/BaseAutonomousBehaviour.h"
 #include "Behaviours/FlockingBehaviour.h"
 #include "Behaviours/SeekingBehaviour.h"
@@ -70,7 +71,9 @@ void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, fl
 	AgentsInView.Reset();
 	for(const TWeakObjectPtr<AActor>& Agent : SensedAgents)
 	{
-		if(Agent.IsValid() && IsPointInFOV(Agent->GetActorLocation(), MinimumSearchRadius, MaximumSearchRadius, FOVHalfAngle))
+		if(Agent.IsValid() && Utility::IsPointInFOV(
+			GetOwner()->GetActorLocation(), GetOwner()->GetActorForwardVector(),Agent->GetActorLocation(),
+			MinimumSearchRadius, MaximumSearchRadius, FOVHalfAngle))
 		{
 			AgentsInView.Add(Agent);
 		}
@@ -85,19 +88,6 @@ bool UAutonomousMovementComponent::CanAgentLead() const
 		LeaderSearchParameters.SearchRadius.GetUpperBoundValue(), LeaderSearchParameters.FOVHalfAngle, OtherAgents);
 
 	return OtherAgents.Num() == 0;
-}
-
-bool UAutonomousMovementComponent::IsPointInFOV(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const
-{
-	const FVector& OtherAgentVector = OtherAgentLocation - GetOwner()->GetActorLocation();
-
-	const FVector& Forward = GetOwner()->GetActorForwardVector();
-	const float DotProduct = OtherAgentVector.GetSafeNormal().Dot(Forward); 
-
-	const float Angle = FMath::Abs(FMath::RadiansToDegrees(FMath::Acos(DotProduct)));
-	const float Distance = OtherAgentVector.Length();
-	
-	return Distance > MinimumSearchRadius && Distance < MaximumSearchRadius && Angle < HalfFOV;
 }
 
 void UAutonomousMovementComponent::SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget)

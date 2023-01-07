@@ -5,8 +5,8 @@
 #include <CoreMinimal.h>
 #include <Components/ActorComponent.h>
 
-#include "DataTypes/CommonTypes.h"
-#include "DataTypes/FSearchParameters.h"
+#include "Common/CommonTypes.h"
+#include "Common/FSearchParameters.h"
 #include "AutonomousMovementComponent.generated.h"
 
 // Forward declarations
@@ -47,10 +47,7 @@ protected:
 
 	// Get all agents that fall in the specified view cone.
 	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const;
-
-	// Check if a point in 3D space falls in a cone defined by its radii and FOV Half-angle.
-	bool IsPointInFOV(const FVector& OtherAgentLocation, float MinimumSearchRadius, float MaximumSearchRadius, float HalfFOV) const;
-
+	
 	// Is the agent not surrounded by other agents.
 	bool CanAgentLead() const;
 

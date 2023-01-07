@@ -5,7 +5,7 @@
 #include <CoreMinimal.h>
 #include <UObject/Interface.h>
 
-#include "DataTypes/CommonTypes.h"
+#include "Common/CommonTypes.h"
 #include "FlockingBehaviour.generated.h"
 
 // This class does not need to be modified.

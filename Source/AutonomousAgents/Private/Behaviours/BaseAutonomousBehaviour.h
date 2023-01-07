@@ -5,8 +5,9 @@
 #include <CoreMinimal.h>
 #include <UObject/Object.h>
 
-#include "DataTypes/CommonTypes.h"
-#include "DataTypes/FSearchParameters.h"
+#include "Common/Utility.h"
+#include "Common/CommonTypes.h"
+#include "Common/FSearchParameters.h"
 #include "BaseAutonomousBehaviour.generated.h"
 
 /**
@@ -21,9 +22,6 @@ protected:
 	
 	// Get all agents that fall in the specified view cone.
 	void GetAgentsInView(const FWeakActorPtr& ViewingActor, const FActorArray& FromAgents, FActorArray& Out_AgentsInView) const;
-
-	// Check if a point in 3D space falls in a cone defined by its radii and FOV Half-angle.
-	bool IsPointInFOV(const FVector& EyeLocation, const FVector& LookingDirection, const FVector& Point) const;
 	
 protected:
 	
@@ -47,20 +45,11 @@ inline void UBaseAutonomousBehaviour::GetAgentsInView(const FWeakActorPtr& Viewi
 	Out_AgentsInView.Reset();
 	for (const FWeakActorPtr& Agent : FromAgents)
 	{
-		if (Agent.IsValid() && IsPointInFOV(ViewingActor->GetActorLocation(), ViewingActor->GetActorForwardVector(), Agent->GetActorLocation()))
+		if (Agent.IsValid() && Utility::IsPointInFOV(
+			ViewingActor->GetActorLocation(), ViewingActor->GetActorForwardVector(), Agent->GetActorLocation(),
+			SearchConfig.SearchRadius.GetLowerBoundValue(), SearchConfig.SearchRadius.GetUpperBoundValue(), SearchConfig.FOVHalfAngle))
 		{
 			Out_AgentsInView.Add(Agent);
 		}
 	}
-}
-
-inline bool UBaseAutonomousBehaviour::IsPointInFOV(const FVector& EyeLocation, const FVector& LookingDirection, const FVector& Point) const
-{
-	const FVector& PointVector = Point - EyeLocation;
-	const float Distance = PointVector.Length();
-
-	const float DotProduct = PointVector.GetSafeNormal().Dot(LookingDirection.GetSafeNormal());
-	const float Angle = FMath::Abs(FMath::RadiansToDegrees(FMath::Acos(DotProduct)));
-	
-	return Distance > SearchConfig.SearchRadius.GetLowerBoundValue() && Distance < SearchConfig.SearchRadius.GetUpperBoundValue() && Angle < SearchConfig.FOVHalfAngle;
 }
