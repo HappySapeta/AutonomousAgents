@@ -1,6 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "SeparationBehaviour.h"
+#include "Behaviours/SeparationBehaviour.h"
 
 FVector USeparationBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const
 {

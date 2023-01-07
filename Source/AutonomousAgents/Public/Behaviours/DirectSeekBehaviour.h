@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Behaviours/Core/BaseFlockingBehaviour.h"
-#include "Behaviours/Core/SeekingInterface.h"
+#include "Behaviours/Base/BaseFlockingBehaviour.h"
+#include "Behaviours/Base/SeekingInterface.h"
 #include "UObject/Object.h"
 #include "DirectSeekBehaviour.generated.h"
 

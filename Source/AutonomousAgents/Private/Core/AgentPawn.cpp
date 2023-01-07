@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "AgentPawn.h"
-#include "Components/AutonomousMovementComponent/AutonomousMovementComponent.h"
+#include "Core/AgentPawn.h"
+#include "Components/AutonomousMovementComponent.h"
 
 #include <Kismet/GameplayStatics.h>
 #include <Kismet/KismetMathLibrary.h>

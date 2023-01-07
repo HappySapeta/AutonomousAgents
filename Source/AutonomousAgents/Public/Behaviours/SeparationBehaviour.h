@@ -5,20 +5,19 @@
 #include <CoreMinimal.h>
 #include <UObject/Object.h>
 
-#include "Behaviours/Core/BaseFlockingBehaviour.h"
-#include "Behaviours/Core/FlockingInterface.h"
-#include "AlignmentBehaviour.generated.h"
+#include "Behaviours/Base/BaseFlockingBehaviour.h"
+#include "Behaviours/Base/FlockingInterface.h"
+#include "SeparationBehaviour.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class AUTONOMOUSAGENTS_API UAlignmentBehaviour : public UBaseFlockingBehaviour, public IFlockingInterface
+class AUTONOMOUSAGENTS_API USeparationBehaviour : public UBaseFlockingBehaviour, public IFlockingInterface
 {
 	GENERATED_BODY()
 
 public:
 	
 	virtual FVector CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const override;
-	
 };

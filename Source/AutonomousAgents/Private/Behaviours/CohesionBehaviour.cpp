@@ -1,6 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "CohesionBehaviour.h"
+#include "Behaviours/CohesionBehaviour.h"
 
 FVector UCohesionBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const
 {

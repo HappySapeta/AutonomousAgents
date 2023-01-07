@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "AutonomousMovementComponent.h"
+#include "Components/AutonomousMovementComponent.h"
 #include "Common/Utility.h"
-#include "Behaviours/Core/BaseFlockingBehaviour.h"
-#include "Behaviours/Core/FlockingInterface.h"
-#include "Behaviours/Core/SeekingInterface.h"
+#include "Behaviours/Base/BaseFlockingBehaviour.h"
+#include "Behaviours/Base/FlockingInterface.h"
+#include "Behaviours/Base/SeekingInterface.h"
 #include "Components/SphereComponent.h"
 
 UAutonomousMovementComponent::UAutonomousMovementComponent()
