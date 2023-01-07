@@ -6,11 +6,11 @@
 #include <UObject/Interface.h>
 
 #include "Common/CommonTypes.h"
-#include "FlockingBehaviour.generated.h"
+#include "SeekingInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(NotBlueprintable)
-class UFlockingBehaviour : public UInterface
+class USeekingInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -18,12 +18,13 @@ class UFlockingBehaviour : public UInterface
 /**
  * 
  */
-class AUTONOMOUSAGENTS_API IFlockingBehaviour
+class AUTONOMOUSAGENTS_API ISeekingInterface
 {
 	GENERATED_BODY()
-	
+
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
-	virtual FVector CalculateSteerForce(const FWeakActorPtr& AffectedActor, const FActorArray& NearbyAgents, const float MaxSpeed) const { return FVector::ZeroVector; }
+	virtual FVector CalculateSeekForce(const FWeakActorPtr& AffectedActor, const FWeakActorPtr& ChaseTarget, const float MaxSpeed) const { return FVector::ZeroVector; }
+	
 };

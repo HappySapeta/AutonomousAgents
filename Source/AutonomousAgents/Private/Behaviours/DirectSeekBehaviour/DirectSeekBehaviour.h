@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Behaviours/BaseAutonomousBehaviour.h"
-#include "Behaviours/SeekingBehaviour.h"
+#include "Behaviours/Core/BaseFlockingBehaviour.h"
+#include "Behaviours/Core/SeekingInterface.h"
 #include "UObject/Object.h"
 #include "DirectSeekBehaviour.generated.h"
 
@@ -12,7 +12,7 @@
  * 
  */
 UCLASS(Blueprintable)
-class AUTONOMOUSAGENTS_API UDirectSeekBehaviour : public UBaseAutonomousBehaviour, public ISeekingBehaviour
+class AUTONOMOUSAGENTS_API UDirectSeekBehaviour : public UBaseAutonomousBehaviour, public ISeekingInterface
 {
 	GENERATED_BODY()
 

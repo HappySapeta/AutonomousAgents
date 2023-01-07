@@ -5,15 +5,15 @@
 #include <CoreMinimal.h>
 #include <UObject/Object.h>
 
-#include "Behaviours/BaseAutonomousBehaviour.h"
-#include "Behaviours/FlockingBehaviour.h"
+#include "Behaviours/Core/BaseFlockingBehaviour.h"
+#include "Behaviours/Core/FlockingInterface.h"
 #include "SeparationBehaviour.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class AUTONOMOUSAGENTS_API USeparationBehaviour : public UBaseAutonomousBehaviour, public IFlockingBehaviour
+class AUTONOMOUSAGENTS_API USeparationBehaviour : public UBaseFlockingBehaviour, public IFlockingInterface
 {
 	GENERATED_BODY()
 

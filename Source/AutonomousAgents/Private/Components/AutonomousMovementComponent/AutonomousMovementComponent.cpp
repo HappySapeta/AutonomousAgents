@@ -2,9 +2,9 @@
 
 #include "AutonomousMovementComponent.h"
 #include "Common/Utility.h"
-#include "Behaviours/BaseAutonomousBehaviour.h"
-#include "Behaviours/FlockingBehaviour.h"
-#include "Behaviours/SeekingBehaviour.h"
+#include "Behaviours/Core/BaseFlockingBehaviour.h"
+#include "Behaviours/Core/FlockingInterface.h"
+#include "Behaviours/Core/SeekingInterface.h"
 #include "Components/SphereComponent.h"
 
 UAutonomousMovementComponent::UAutonomousMovementComponent()
@@ -31,7 +31,7 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	{
 		for(const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SeekingBehaviours)
 		{
-			const ISeekingBehaviour* SeekingBehaviour = Cast<ISeekingBehaviour>(Behaviour->GetDefaultObject());
+			const ISeekingInterface* SeekingBehaviour = Cast<ISeekingInterface>(Behaviour->GetDefaultObject());
 			if(!SeekingBehaviour) continue;
 
 			MovementForce += SeekingBehaviour->CalculateSeekForce(GetOwner(), ChaseTarget, MaxSpeed);
@@ -42,7 +42,7 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	{
 		for(const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : FlockingBehaviours)
 		{
-			const IFlockingBehaviour* FlockingBehaviour = Cast<IFlockingBehaviour>(Behaviour->GetDefaultObject());
+			const IFlockingInterface* FlockingBehaviour = Cast<IFlockingInterface>(Behaviour->GetDefaultObject());
 			if(!FlockingBehaviour) continue;
 
 			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), SensedAgents, MaxSpeed);
