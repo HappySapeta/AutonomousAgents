@@ -6,7 +6,7 @@
 #include <Components/ActorComponent.h>
 
 #include "DataTypes/CommonTypes.h"
-#include "DataTypes/FSense_Config.h"
+#include "DataTypes/FSearchParameters.h"
 #include "AutonomousMovementComponent.generated.h"
 
 // Forward declarations
@@ -93,7 +93,7 @@ protected:
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
 	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "AgentsTag"))
-	FSense_Config LeaderCheckConfig;
+	FSearchParameters LeaderSearchParameters;
 	
 protected:
 

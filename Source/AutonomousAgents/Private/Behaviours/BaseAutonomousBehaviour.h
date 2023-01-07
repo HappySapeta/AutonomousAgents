@@ -6,7 +6,7 @@
 #include <UObject/Object.h>
 
 #include "DataTypes/CommonTypes.h"
-#include "DataTypes/FSense_Config.h"
+#include "DataTypes/FSearchParameters.h"
 #include "BaseAutonomousBehaviour.generated.h"
 
 /**
@@ -34,7 +34,7 @@ protected:
 	float Influence = 1.0f;
 	
 	UPROPERTY(EditAnywhere, Category = "Configuration", meta = (EditCondition = "bIsEnabled", EditConditionHides = "true"))
-	FSense_Config SearchConfig;
+	FSearchParameters SearchConfig;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	bool bShouldDebug = false;

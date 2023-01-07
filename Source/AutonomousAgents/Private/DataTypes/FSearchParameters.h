@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include <CoreMinimal.h>
-#include "FSense_Config.generated.h"
+#include "FSearchParameters.generated.h"
 
 USTRUCT(BlueprintType)
-struct FSense_Config
+struct FSearchParameters
 {
 	GENERATED_BODY()
 	

@@ -81,8 +81,8 @@ bool UAutonomousMovementComponent::CanAgentLead() const
 {
 	FActorArray OtherAgents;
 	GetAgentsInView(
-		LeaderCheckConfig.SearchRadius.GetLowerBoundValue(),
-		LeaderCheckConfig.SearchRadius.GetUpperBoundValue(), LeaderCheckConfig.FOVHalfAngle, OtherAgents);
+		LeaderSearchParameters.SearchRadius.GetLowerBoundValue(),
+		LeaderSearchParameters.SearchRadius.GetUpperBoundValue(), LeaderSearchParameters.FOVHalfAngle, OtherAgents);
 
 	return OtherAgents.Num() == 0;
 }
