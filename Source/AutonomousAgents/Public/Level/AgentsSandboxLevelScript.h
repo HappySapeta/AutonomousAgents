@@ -28,7 +28,10 @@ public:
 	void DestroyAllSpawnedActors();
 
 	UFUNCTION(BlueprintCallable)
-	void ScaleBehaviourInfluence(const TSubclassOf<UBaseAutonomousBehaviour>& BehaviourType, float Scale);
+	void ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour, float Scale);
+
+	UFUNCTION(BlueprintCallable)
+	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
 	
 private:
 	

@@ -28,7 +28,7 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, 
 		AverageFlockVelocity = AverageFlockVelocity.GetSafeNormal() * MaxSpeed;
 
 		const FVector& AlignmentManeuver = AverageFlockVelocity - Affector->GetVelocity();
-		SteeringInput = AlignmentManeuver * Influence;
+		SteeringInput = AlignmentManeuver * Influence * InfluenceScale;
 	}
 
 	return SteeringInput;

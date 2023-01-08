@@ -19,5 +19,5 @@ FVector UDirectSeekBehaviour::CalculateSeekForce(const FWeakActorPtr& AffectedAc
 		DrawDebugLine(GetWorld(), AffectedActor->GetActorLocation(), ChaseTarget->GetActorLocation(), FColor::Emerald, false, 0.01f, 0, 5.0f);
 	}
 	
-	return ChaseManeuver * Influence;
+	return ChaseManeuver * Influence * InfluenceScale;
 }

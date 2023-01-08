@@ -9,11 +9,28 @@
 /**
  * 
  */
-UCLASS(Abstract)
+UCLASS(Abstract, BlueprintType)
 class AUTONOMOUSAGENTS_API UBaseAutonomousBehaviour : public UObject
 {
 	GENERATED_BODY()
 
+public:
+
+	float GetInfluence() const
+	{
+		return InfluenceScale;
+	}
+	
+	void ScaleInfluence(float Scale)
+	{
+		InfluenceScale = Scale;
+	}
+
+	void ResetInfluence()
+	{
+		InfluenceScale = 1.0f;
+	}
+	
 protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Configuration")
@@ -24,4 +41,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
 	bool bShouldDebug = false;
+
+protected:
+	
+	float InfluenceScale = 1.0f;
+	
 };

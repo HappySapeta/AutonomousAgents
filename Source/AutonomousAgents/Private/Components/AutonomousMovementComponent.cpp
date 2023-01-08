@@ -21,6 +21,16 @@ void UAutonomousMovementComponent::BeginPlay()
 	SphereComponent = GetOwner()->FindComponentByClass<USphereComponent>();
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnEnterDetection);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnExitDetection);
+
+	for(const auto& Behaviour : FlockingBehaviours)
+	{
+		Cast<UBaseAutonomousBehaviour>(Behaviour->GetDefaultObject())->ResetInfluence();
+	}
+
+	for(const auto& Behaviour : SeekingBehaviours)
+	{
+		Cast<UBaseAutonomousBehaviour>(Behaviour->GetDefaultObject())->ResetInfluence();
+	}
 }
 
 void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Subsystems/AgentsSandboxLevelScript.h"
+#include "Level/AgentsSandboxLevelScript.h"
+
+#include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Common/AgentSpawnerConfig.h"
 #include "Core/AgentPawn.h"
 
@@ -49,7 +51,20 @@ void AAgentsSandboxLevelScript::DestroyAllSpawnedActors()
 	SpawnedAgents.Reset();
 }
 
-void AAgentsSandboxLevelScript::ScaleBehaviourInfluence(const TSubclassOf<UBaseAutonomousBehaviour>& BehaviourType, float Scale)
+void AAgentsSandboxLevelScript::ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour, float Scale)
 {
-	
+	UBaseAutonomousBehaviour* Behaviour = Cast<UBaseAutonomousBehaviour>(TargetBehaviour->GetDefaultObject());
+	if(Behaviour != nullptr)
+	{
+		Behaviour->ScaleInfluence(Scale);	
+	}
+}
+
+void AAgentsSandboxLevelScript::ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour)
+{
+	UBaseAutonomousBehaviour* Behaviour = Cast<UBaseAutonomousBehaviour>(TargetBehaviour->GetDefaultObject());
+	if(Behaviour != nullptr)
+	{
+		Behaviour->ResetInfluence();	
+	}
 }

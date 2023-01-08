@@ -28,7 +28,7 @@ FVector UCohesionBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, c
 		HerdLocation /= CohesionAgents.Num();
 		const FVector& DesiredVelocity = (HerdLocation - Affector->GetActorLocation()).GetSafeNormal() * MaxSpeed;
 		const FVector& CohesionManeuver = DesiredVelocity - Affector->GetVelocity();
-		SteeringInput = CohesionManeuver * Influence;
+		SteeringInput = CohesionManeuver * Influence * InfluenceScale;
 	}
 
 	return SteeringInput;

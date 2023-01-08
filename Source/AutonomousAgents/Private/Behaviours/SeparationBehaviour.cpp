@@ -35,7 +35,7 @@ FVector USeparationBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector,
 		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
 
 		const FVector& SeparationManeuver = AvoidanceVector - Affector->GetVelocity();
-		SteeringInput = SeparationManeuver * Influence;
+		SteeringInput = SeparationManeuver * Influence * InfluenceScale;
 	}
 
 	return SteeringInput;
