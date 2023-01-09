@@ -12,16 +12,15 @@ UAutonomousMovementComponent::UAutonomousMovementComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-void UAutonomousMovementComponent::BeginPlay()
+void UAutonomousMovementComponent::InitializeSphereComponent()
 {
-	Super::BeginPlay();
-
-	PreviousLocation = GetOwner()->GetActorLocation();
-	
 	SphereComponent = GetOwner()->FindComponentByClass<USphereComponent>();
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnEnterDetection);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnExitDetection);
+}
 
+void UAutonomousMovementComponent::ResetBehaviours()
+{
 	for(const auto& Behaviour : FlockingBehaviours)
 	{
 		Cast<UBaseAutonomousBehaviour>(Behaviour->GetDefaultObject())->ResetInfluence();
@@ -31,6 +30,16 @@ void UAutonomousMovementComponent::BeginPlay()
 	{
 		Cast<UBaseAutonomousBehaviour>(Behaviour->GetDefaultObject())->ResetInfluence();
 	}
+}
+
+void UAutonomousMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	PreviousLocation = GetOwner()->GetActorLocation();
+	
+	InitializeSphereComponent();
+	ResetBehaviours();
 }
 
 void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

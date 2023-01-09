@@ -6,8 +6,9 @@
 #include "Engine/LevelScriptActor.h"
 #include "AgentsSandboxLevelScript.generated.h"
 
-class UBaseAutonomousBehaviour;
 // Forward declarations
+class USpatialGridSubsystem;
+class UBaseAutonomousBehaviour;
 class UAgentSpawnerConfig;
 class AAgentPawn;
 
@@ -21,6 +22,8 @@ class AUTONOMOUSAGENTS_API AAgentsSandboxLevelScript : public ALevelScriptActor
 	
 public:
 
+	virtual void Tick(float DeltaSeconds) override;
+	
 	UFUNCTION(BlueprintCallable)
 	void SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig);
 
@@ -32,9 +35,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
-	
+
 private:
 	
 	TArray<TWeakObjectPtr<AAgentPawn>> SpawnedAgents;
-	
+
+	UPROPERTY()
+	USpatialGridSubsystem* SpatialGridSubsystem;
 };

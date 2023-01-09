@@ -5,6 +5,16 @@
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Common/AgentSpawnerConfig.h"
 #include "Core/AgentPawn.h"
+#include "Subsystems/SpatialGridSubsystem.h"
+
+void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if(SpatialGridSubsystem)
+	{
+		SpatialGridSubsystem->Update();
+	}
+}
 
 void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig)
 {
@@ -13,6 +23,11 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 	
 	UWorld* World = GetWorld();
 	if(World == nullptr) return;
+
+	if(const UGameInstance* GameInstance = GetGameInstance())
+	{
+		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();	
+	}
 	
 	FVector SpawnLocation = SpawnConfig->Origin - FVector(SpawnConfig->Span, SpawnConfig->Span, 0.0f);
 
@@ -31,6 +46,12 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 		{
 			const TWeakObjectPtr<AAgentPawn>& NewAgent = Cast<AAgentPawn>(World->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
 			SpawnedAgents.Add(NewAgent);
+
+			if(SpatialGridSubsystem)
+			{
+				SpatialGridSubsystem->PutActorIntoGrid(NewAgent);
+			}
+			
 			SpawnLocation.Y += SpawnConfig->Separation;
 		}
 		SpawnLocation.X += SpawnConfig->Separation;
