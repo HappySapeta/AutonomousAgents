@@ -7,6 +7,21 @@
 #include "Core/AgentPawn.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 
+AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+void AAgentsSandboxLevelScript::BeginPlay()
+{
+	Super::BeginPlay();
+	const UGameInstance* GameInstance = GetGameInstance();
+	if(GameInstance)
+	{
+		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
+	}
+}
+
 void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -89,3 +104,12 @@ void AAgentsSandboxLevelScript::ResetBehaviourInfluence(TSubclassOf<UBaseAutonom
 		Behaviour->ResetInfluence();	
 	}
 }
+
+void AAgentsSandboxLevelScript::PutActorIntoGrid(AActor* Actor) const
+{
+	if(SpatialGridSubsystem)
+	{
+		SpatialGridSubsystem->PutActorIntoGrid(Actor);
+	}
+}
+

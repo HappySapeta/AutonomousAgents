@@ -6,6 +6,7 @@
 #include "Behaviours/Base/FlockingInterface.h"
 #include "Behaviours/Base/SeekingInterface.h"
 #include "Components/SphereComponent.h"
+#include "Subsystems/SpatialGridSubsystem.h"
 
 UAutonomousMovementComponent::UAutonomousMovementComponent()
 {
@@ -40,13 +41,58 @@ void UAutonomousMovementComponent::BeginPlay()
 	
 	InitializeSphereComponent();
 	ResetBehaviours();
+
+	const UGameInstance* GameInstance = GetWorld()->GetGameInstance();
+	if(GameInstance != nullptr)
+	{
+		GridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
+		if(GridSubsystem.IsValid())
+		{
+			GridSubsystem->OnActorPresenceUpdatedEvent.AddDynamic(this, &UAutonomousMovementComponent::HandleActorPresenceUpdated);
+		}
+	}
+}
+
+void UAutonomousMovementComponent::HandleActorPresenceUpdated(AActor* Actor)
+{
+	if(Actor != nullptr)
+	{
+		if(AllAgents.Contains(Actor))
+		{
+			AllAgents.Remove(Actor);
+		}
+		else
+		{
+			AllAgents.Add(Actor);
+		}
+	}
+}
+
+void UAutonomousMovementComponent::DebugOtherActors()
+{
+	if(bDebugSense)
+	{
+		if(GridSubsystem.IsValid())
+		{
+			TArray<uint32> SensedActorIndices;
+			GridSubsystem->GetActorNearLocation(GetOwner()->GetActorLocation(), DebugSenseRange, SensedActorIndices);
+			
+			for(int i = 0; i < SensedActorIndices.Num(); ++i)
+			{
+				const AActor* OtherActor = AllAgents[i];
+				if(OtherActor == nullptr) continue;
+				
+				DrawDebugBox(GetWorld(), OtherActor->GetActorLocation(), FVector(100.0f, 100.0f, 100.0f), FColor::Red, false, 0.05f);
+			}
+		}
+	}
 }
 
 void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
-	if(CanAgentLead())
+	if(bForceLeadership || CanAgentLead())
 	{
 		for(const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SeekingBehaviours)
 		{
@@ -68,6 +114,8 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		}
 		SetIsFollowing.Broadcast();
 	}
+
+	DebugOtherActors();
 	
 	PhysicsUpdate(DeltaTime);
 }

@@ -42,22 +42,29 @@ public:
 public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	
-	void InitGrid(const TWeakObjectPtr<UGridParameters>& Parameters);
+
+	UFUNCTION(BlueprintCallable)
+	void InitGrid(UGridParameters* Parameters);
 
 	void Update();
 
 	void PutActorIntoGrid(const FWeakActorPtr& Actor);
 	
 	void GetActorNearLocation(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
+	void DrawGrid() const;
 
-	UFUNCTION(BlueprintCallable)
-	void DebugGrid(float Duration) const;
+	void DebugGrid() const;
 
 private:
 	
 	void UpdateGrid();
 
+	static void GetIndicesFromBlock(const FBitBlock& Block, TArray<uint32>& Out_Indices);
+
+	static void GetIndicesFromMask(const uint64 BitMask, uint32 Offset, TArray<uint32>& Out_Indices);
+	
+	void DrawActors(const FVector& Anchor, TArray<uint32> ActorIndices) const;
+	
 	void GetActorsInCell(const FCellLocation& CellLocation, TArray<uint32>& Indices) const;
 	
 	void ResetBlocks();
@@ -75,7 +82,10 @@ public:
 private:
 
 	FActorArray GridActors;
-	TWeakObjectPtr<UGridParameters> GridParameters;
+
+	UPROPERTY(Transient)
+	UGridParameters* GridParameters;
+
 	TArray<FBitBlock> XBlocks;
 	TArray<FBitBlock> YBlocks;
 };

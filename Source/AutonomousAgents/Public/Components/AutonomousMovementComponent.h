@@ -9,6 +9,7 @@
 #include "Common/FSearchParameters.h"
 #include "AutonomousMovementComponent.generated.h"
 
+class USpatialGridSubsystem;
 // Forward declarations
 class UBaseAutonomousBehaviour;
 class USphereComponent;
@@ -44,6 +45,10 @@ protected:
 
 	// 1. Initialize variables.
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void HandleActorPresenceUpdated(AActor* Actor);
+	void DebugOtherActors();
 
 	// Get all agents that fall in the specified view cone.
 	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const;
@@ -83,6 +88,10 @@ protected:
 	// Maximum speed of the agent.
 	UPROPERTY(EditAnywhere, Category = "Force Settings")
 	float MaxSpeed = 100.0f;
+	
+	// Maximum speed of the agent.
+	UPROPERTY(EditAnywhere, Category = "Force Settings")
+	float DebugSenseRange = 100.0f;
 
 	// Tag used to identify other agents.
 	UPROPERTY(EditAnywhere, Category = "Common")
@@ -92,7 +101,17 @@ protected:
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
 	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "AgentsTag"))
+	bool bForceLeadership = false;
+
+	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
+	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (EditCondition = "bForceLeadership", EditConditionHides = "true"))
 	FSearchParameters LeaderSearchParameters;
+
+protected:
+
+	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
+	UPROPERTY(EditAnywhere, Category = "Debug Settings", meta = (DisplayAfter = "LeaderSearchParameters"))
+	bool bDebugSense = false;
 	
 protected:
 
@@ -106,10 +125,15 @@ private:
 
 	// Other agents in the vicinity.
 	FActorArray SensedAgents;
+
+	UPROPERTY()
+	TArray<AActor*> AllAgents;
 	
 	FWeakActorPtr ChaseTarget;
-	TWeakObjectPtr<USphereComponent> SphereComponent;
 
+	TWeakObjectPtr<USphereComponent> SphereComponent;
+	TWeakObjectPtr<USpatialGridSubsystem> GridSubsystem;
+	
 	FVector PreviousLocation = FVector::ZeroVector;
 	FVector PreviousVelocity = FVector::ZeroVector;
 	FVector MovementForce = FVector::ZeroVector;

@@ -11,21 +11,23 @@ void USpatialGridSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void USpatialGridSubsystem::InitializeBlocks()
 {
-	XBlocks.Init(FBitBlock(), GridParameters->GridResolution);
+	XBlocks.Init(FBitBlock(), GridParameters->Resolution);
 	for(FBitBlock& Block : XBlocks)
 	{
 		Block.Init(0, BLOCK_SIZE);
 	}
 	
-	YBlocks.Init(FBitBlock(), GridParameters->GridResolution);
+	YBlocks.Init(FBitBlock(), GridParameters->Resolution);
 	for(FBitBlock& Block : YBlocks)
 	{
 		Block.Init(0, BLOCK_SIZE);
 	}
 }
 
-void USpatialGridSubsystem::InitGrid(const TWeakObjectPtr<UGridParameters>& Parameters)
+void USpatialGridSubsystem::InitGrid(UGridParameters* Parameters)
 {
+	if(Parameters == nullptr) return;
+	
 	GridParameters = Parameters;
 	
 	GridActors.Reserve(GridParameters->MaxActors);
@@ -34,7 +36,8 @@ void USpatialGridSubsystem::InitGrid(const TWeakObjectPtr<UGridParameters>& Para
 
 void USpatialGridSubsystem::Update()
 {
-	UpdateGrid();	
+	UpdateGrid();
+	DebugGrid();
 }
 
 void USpatialGridSubsystem::PutActorIntoGrid(const FWeakActorPtr& Actor)
@@ -51,25 +54,29 @@ void USpatialGridSubsystem::GetActorNearLocation(const FVector& Location, const 
 
 	Out_ActorIndices.Reset();
 	
-	const uint32 Reach = FMath::FloorToInt32(Radius / GridParameters->GridResolution);
+	const uint32 Reach = FMath::FloorToInt32(Radius / GridParameters->Resolution);
 	const FCellLocation& OriginCellLocation = ConvertCoordinatesToCellLocation(Location);
 	
-	uint32 XIndex = OriginCellLocation.X - Reach;
-	uint32 YIndex = OriginCellLocation.Y - Reach;
+	int XIndex = OriginCellLocation.X - Reach;
+	int YIndex = OriginCellLocation.Y - Reach;
 
-	while(XIndex < OriginCellLocation.X + Reach)
+	while(XIndex < static_cast<int>(OriginCellLocation.X + Reach))
 	{
-		while(YIndex < OriginCellLocation.Y + Reach)
+		if(!XBlocks.IsValidIndex(XIndex))
 		{
-			if(!XBlocks.IsValidIndex(XIndex) || !YBlocks.IsValidIndex(YIndex))
+			XIndex += 1;
+			continue;
+		}
+		
+		while(YIndex < static_cast<int>(OriginCellLocation.Y + Reach))
+		{
+			if(YBlocks.IsValidIndex(YIndex))
 			{
-				continue;
+				TArray<uint32> IndicesInCell;
+				GetActorsInCell(FCellLocation(XIndex, YIndex), IndicesInCell);
+				Out_ActorIndices.Append(IndicesInCell);
 			}
-
-			TArray<uint32> IndicesInCell;
-			GetActorsInCell(FCellLocation(XIndex, YIndex), IndicesInCell);
-			Out_ActorIndices.Append(IndicesInCell);
-
+			
 			YIndex += 1;
 		}
 		YIndex = 0;
@@ -77,18 +84,16 @@ void USpatialGridSubsystem::GetActorNearLocation(const FVector& Location, const 
 	}
 }
 
-void USpatialGridSubsystem::DebugGrid(float Duration) const
+void USpatialGridSubsystem::DrawGrid() const
 {
-	if(!GridParameters->bDebug) return;
-	
-	const float CellWidth = (GridParameters->XRange.GetUpperBoundValue() - GridParameters->XRange.GetLowerBoundValue()) / GridParameters->GridResolution;
+	const float CellWidth = (GridParameters->XRange.GetUpperBoundValue() - GridParameters->XRange.GetLowerBoundValue()) / GridParameters->Resolution;
 	
 	FVector StartLocation(GridParameters->XRange.GetLowerBoundValue(), GridParameters->YRange.GetLowerBoundValue(), 0.0f);
 	FVector EndLocation(GridParameters->XRange.GetLowerBoundValue(), GridParameters->YRange.GetUpperBoundValue(), 0.0f);
 	
 	while(StartLocation.X <= GridParameters->XRange.GetUpperBoundValue())
 	{
-		DrawDebugLine(GetWorld(), StartLocation, EndLocation, GridParameters->GridColor, false, Duration, 0, GridParameters->GridThickness);
+		DrawDebugLine(GetWorld(), StartLocation, EndLocation, GridParameters->Color, false, GridParameters->Duration, 10, GridParameters->Thickness);
 		
 		StartLocation.X += CellWidth;
 		EndLocation.X += CellWidth;
@@ -99,10 +104,61 @@ void USpatialGridSubsystem::DebugGrid(float Duration) const
 	
 	while(StartLocation.Y <= GridParameters->YRange.GetUpperBoundValue())
 	{
-		DrawDebugLine(GetWorld(), StartLocation, EndLocation, GridParameters->GridColor, false, Duration, 0, GridParameters->GridThickness);
+		DrawDebugLine(GetWorld(), StartLocation, EndLocation, GridParameters->Color, false, GridParameters->Duration, 11, GridParameters->Thickness);
 		
 		StartLocation.Y += CellWidth;
 		EndLocation.Y += CellWidth;
+	}
+}
+
+void USpatialGridSubsystem::DebugGrid() const
+{
+	if(!GridParameters->bDebug) return;
+	
+	DrawGrid();
+
+	const float XRangeLength = GridParameters->XRange.GetUpperBoundValue() - GridParameters->XRange.GetLowerBoundValue();
+	
+	FVector LabelLocation = FVector(GridParameters->XRange.GetLowerBoundValue(), GridParameters->XRange.GetLowerBoundValue(), 0.0f);
+	for(const FBitBlock& Block : XBlocks)
+	{
+		TArray<uint32> ActorIndices;
+		GetIndicesFromBlock(Block, ActorIndices);
+		DrawActors(LabelLocation, ActorIndices);
+		
+		LabelLocation.X += XRangeLength / (GridParameters->Resolution * 0.5f);
+	}
+}
+
+void USpatialGridSubsystem::DrawActors(const FVector& Anchor, TArray<uint32> ActorIndices) const
+{
+	for(const uint32 Index : ActorIndices)
+	{
+		if(!GridActors.IsValidIndex(Index)) continue;
+		DrawDebugLine(GetWorld(), Anchor, GridActors[Index]->GetActorLocation(), FColor::Blue, false, 0.05f);
+	}
+}
+
+void USpatialGridSubsystem::GetIndicesFromBlock(const FBitBlock& Block, TArray<uint32>& Out_Indices)
+{
+	for(int BlockIndex = 0; BlockIndex < Block.Num(); ++BlockIndex)
+	{
+		TArray<uint32> MaskIndices;
+		GetIndicesFromMask(Block[BlockIndex], BlockIndex * 64, MaskIndices);
+
+		Out_Indices.Append(MaskIndices);
+	}
+}
+
+void USpatialGridSubsystem::GetIndicesFromMask(const uint64 BitMask, uint32 Offset, TArray<uint32>& Out_Indices)
+{
+	Out_Indices.Reset();
+	Out_Indices.Init(0, 64);
+	
+	for(int32 BitLocation = 0; BitLocation < 64; ++BitLocation)
+	{
+		const uint64 MaskFilter = static_cast<uint64>(1) << BitLocation;
+		Out_Indices.Add(BitMask & MaskFilter);
 	}
 }
 
@@ -190,8 +246,8 @@ FCellLocation USpatialGridSubsystem::ConvertCoordinatesToCellLocation(FVector Co
 
 	// Find array indices
 	FCellLocation CellLocation;
-	CellLocation.X = FMath::FloorToInt32(Coordinates.X * (GridParameters->GridResolution - 1));
-	CellLocation.Y = FMath::FloorToInt32(Coordinates.Y * (GridParameters->GridResolution - 1));
+	CellLocation.X = FMath::FloorToInt32(Coordinates.X * (GridParameters->Resolution - 1));
+	CellLocation.Y = FMath::FloorToInt32(Coordinates.Y * (GridParameters->Resolution - 1));
 
 	return CellLocation;
 }

@@ -22,6 +22,8 @@ class AUTONOMOUSAGENTS_API AAgentsSandboxLevelScript : public ALevelScriptActor
 	
 public:
 
+	AAgentsSandboxLevelScript();
+	
 	virtual void Tick(float DeltaSeconds) override;
 	
 	UFUNCTION(BlueprintCallable)
@@ -36,10 +38,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
 
+	UFUNCTION(BlueprintCallable)
+	void PutActorIntoGrid(AActor* Actor) const;
+
+protected:
+	
+	virtual void BeginPlay() override;
+
 private:
 	
 	TArray<TWeakObjectPtr<AAgentPawn>> SpawnedAgents;
 
 	UPROPERTY()
-	USpatialGridSubsystem* SpatialGridSubsystem;
+	TObjectPtr<USpatialGridSubsystem> SpatialGridSubsystem;
 };
