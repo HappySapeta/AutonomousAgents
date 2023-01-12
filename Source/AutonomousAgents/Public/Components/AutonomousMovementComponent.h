@@ -23,8 +23,6 @@ class UBaseAutonomousBehaviour;
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class AUTONOMOUSAGENTS_API UAutonomousMovementComponent : public UActorComponent
 {
-
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSimpleDynamicDelegate);
 	
 	GENERATED_BODY()
 
@@ -60,16 +58,6 @@ private:
 	void FetchGridSubsystem();
 
 	void SenseNearbyAgents();
-
-protected:
-
-	// Performs cosmetic updates.
-	UPROPERTY(BlueprintAssignable)
-	FSimpleDynamicDelegate SetIsFollowing;
-
-	// Performs cosmetic updates.
-	UPROPERTY(BlueprintAssignable)
-	FSimpleDynamicDelegate SetIsChasing;
 	
 protected:
 

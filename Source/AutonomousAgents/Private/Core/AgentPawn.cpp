@@ -11,10 +11,11 @@
 AAgentPawn::AAgentPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	USceneComponent* SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneComponent"));
+	SetRootComponent(SceneComponent);
 	
 	AutonomousMovement = CreateDefaultSubobject<UAutonomousMovementComponent>(TEXT("AutonomousMovementComponent"));
-	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	SetRootComponent(SphereComponent);
 }
 
 void AAgentPawn::BeginPlay()

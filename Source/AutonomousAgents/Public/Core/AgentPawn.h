@@ -65,10 +65,6 @@ protected:
 	// The Autonomous Movement Component provides autonomous steering behaviour to the actor.
 	UPROPERTY(EditDefaultsOnly, Category = "Movement", DuplicateTransient)
 	TObjectPtr<UAutonomousMovementComponent> AutonomousMovement;
-
-	// The Sphere Component is used to detect other agents in the vicinity.
-	UPROPERTY(EditAnywhere, Category = "Detection")
-	TObjectPtr<USphereComponent> SphereComponent;
 	
 private:
 

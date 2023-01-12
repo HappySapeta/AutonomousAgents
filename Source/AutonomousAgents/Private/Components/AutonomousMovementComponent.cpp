@@ -75,7 +75,6 @@ void UAutonomousMovementComponent::InvokeBehaviours()
 
 			MovementForce += SeekingBehaviour->CalculateSeekForce(GetOwner(), ChaseTarget, MaxSpeed);
 		}
-		SetIsChasing.Broadcast();
 	}
 	else
 	{
@@ -86,7 +85,6 @@ void UAutonomousMovementComponent::InvokeBehaviours()
 
 			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), NearbyAgents, MaxSpeed);
 		}
-		SetIsFollowing.Broadcast();
 	}
 }
 
