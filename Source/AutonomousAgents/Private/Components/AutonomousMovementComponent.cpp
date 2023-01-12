@@ -49,7 +49,7 @@ void UAutonomousMovementComponent::SenseNearbyAgents()
 	NearbyAgents.Reset();
 	if(GridSubsystem.IsValid())
 	{
-		GridSubsystem->GetActorsInRegion(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgents);
+		GridSubsystem->SearchActors(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgents);
 		NearbyAgents.Remove(GetOwner());
 	}
 

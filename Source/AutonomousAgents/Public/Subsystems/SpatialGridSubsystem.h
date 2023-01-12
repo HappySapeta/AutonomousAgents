@@ -8,23 +8,47 @@
 #include "Math/MathFwd.h"
 #include "SpatialGridSubsystem.generated.h"
 
-#define BITMASK_LENGTH 64
+#define BIT_ROW_SIZE 64
+#define BLOCK_SIZE 20
 
 USTRUCT()
-struct FGridLocation
+struct FGridCellLocation
 {
 	GENERATED_BODY()
 	
-	FGridLocation()
+	FGridCellLocation()
 		: X(0), Y(0)
 	{}
 	
-	FGridLocation(const int XIndex, const int YIndex)
+	FGridCellLocation(const int XIndex, const int YIndex)
 		: X(XIndex), Y(YIndex)
 	{}
 	
 	int X;
 	int Y;
+};
+
+USTRUCT()
+struct FBitBlock
+{
+	GENERATED_BODY();
+	
+	FBitBlock()
+	{
+		BitRow.Init(0, BLOCK_SIZE);
+	}
+
+	uint64& operator[](const uint32 Index)
+	{
+		return BitRow[Index];
+	}
+	
+	const uint64& operator[](const uint32 Index) const
+	{
+		return BitRow[Index];
+	}
+
+	TArray<uint64, TInlineAllocator<BLOCK_SIZE>> BitRow;
 };
 
 UCLASS()
@@ -36,44 +60,44 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeGrid(UGridParameters* Parameters);
-
-public:
 	
 	void Update();
 
 	void RegisterActor(const FWeakActorPtr& Actor);
 	
-	void GetActorsInRegion(const FVector& Location, const float Radius, FActorArray& Out_Actors) const;
+	void SearchActors(const FVector& Location, const float Radius, FActorArray& Out_Actors) const;
+
+public:
 	
 	void DrawGrid() const;
 	
-	void DrawCell(const FGridLocation& GridLocation) const;
+	void DrawCell(const FGridCellLocation& GridLocation) const;
 
 private:
 	
 	void UpdateGrid();
 
-	void GetIndicesInGridLocation(const FGridLocation& GridLocation, TArray<int>& Out_Indices) const;
+	void GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const;
 	
 	void ResetBlocks();
 
-	bool ConvertWorldToGridLocation(FVector WorldLocation, FGridLocation& Out_GridLocation) const;
+	bool ConvertWorldToGridLocation(FVector WorldLocation, FGridCellLocation& Out_GridLocation) const;
 
-	bool ConvertGridToWorldLocation(FGridLocation GridLocation, FVector& Out_WorldLocation) const;
+	bool ConvertGridToWorldLocation(FGridCellLocation GridLocation, FVector& Out_WorldLocation) const;
 
 	bool IsValidWorldLocation(const FVector& WorldLocation) const;
 	
-	bool IsValidGridLocation(const FGridLocation& GridLocation) const;
+	bool IsValidGridLocation(const FGridCellLocation& GridLocation) const;
 
 private:
 
-	int NumBlocks;
+	uint32 NumBlocks;
 	
 	FActorArray GridActors;
 
 	UPROPERTY(Transient)
 	UGridParameters* GridParameters;
 
-	TArray<uint64> Blocks_X;
-	TArray<uint64> Blocks_Y;
+	TArray<FBitBlock> RowBlocks;
+	TArray<FBitBlock> ColumnBlocks;
 };

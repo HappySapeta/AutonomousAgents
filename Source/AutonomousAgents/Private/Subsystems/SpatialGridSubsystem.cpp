@@ -9,10 +9,10 @@ void USpatialGridSubsystem::InitializeGrid(UGridParameters* Parameters)
 	GridParameters = Parameters;
 	
 	NumBlocks = GridParameters->Resolution; 
-	GridActors.Reserve(BITMASK_LENGTH);
+	GridActors.Reserve(BLOCK_SIZE * BIT_ROW_SIZE);
 
-	Blocks_X.Init(static_cast<uint64>(0), NumBlocks);
-	Blocks_Y.Init(static_cast<uint64>(0), NumBlocks);
+	RowBlocks.Init(FBitBlock(), NumBlocks);
+	ColumnBlocks.Init(FBitBlock(), NumBlocks);
 }
 
 void USpatialGridSubsystem::Update()
@@ -26,7 +26,7 @@ void USpatialGridSubsystem::UpdateGrid()
 {
 	for(int ActorIndex = 0; ActorIndex < GridActors.Num(); ++ActorIndex)
 	{
-		if(ActorIndex >= BITMASK_LENGTH) break;
+		if(ActorIndex >= BLOCK_SIZE * BIT_ROW_SIZE) break;
 
 		const FWeakActorPtr& Actor = GridActors[ActorIndex];
 		if(!Actor.IsValid())
@@ -35,18 +35,20 @@ void USpatialGridSubsystem::UpdateGrid()
 		}
 		
 		// Find array indices
-		FGridLocation GridLocation;
+		FGridCellLocation GridLocation;
 		if(!ConvertWorldToGridLocation(Actor->GetActorLocation(), GridLocation))
 		{
 			continue;
 		}
 		
-		// Create bitmask
-		const uint64 BitMask = static_cast<uint64>(1) << ActorIndex;
+		// Create AdditiveMask
+		const uint32 BlockLevel = ActorIndex / BIT_ROW_SIZE;
+		const uint32 BitLocation = ActorIndex % BIT_ROW_SIZE;
+		const uint64 AdditiveMask = static_cast<uint64>(1) << BitLocation;
 
-		// Apply bitmask Blocks
-		Blocks_X[GridLocation.X] |= BitMask;
-		Blocks_Y[GridLocation.Y] |= BitMask;
+		// Apply AdditiveMask
+		RowBlocks[GridLocation.X][BlockLevel] |= AdditiveMask;
+		ColumnBlocks[GridLocation.Y][BlockLevel] |= AdditiveMask;
 	}
 }
 
@@ -55,13 +57,13 @@ void USpatialGridSubsystem::RegisterActor(const FWeakActorPtr& Actor)
 	GridActors.AddUnique(Actor);
 }
 
-void USpatialGridSubsystem::GetActorsInRegion(const FVector& Location, const float Radius, FActorArray& Out_Actors) const
+void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, FActorArray& Out_Actors) const
 {
 	if(!GridParameters) return;
 
 	const int Reach = FMath::FloorToInt(Radius / GridParameters->Range.Size<float>() * GridParameters->Resolution);
 
-	FGridLocation SearchGridLocation;
+	FGridCellLocation SearchGridLocation;
 	if(!ConvertWorldToGridLocation(Location, SearchGridLocation))
 	{
 		return;
@@ -69,10 +71,10 @@ void USpatialGridSubsystem::GetActorsInRegion(const FVector& Location, const flo
 	
 	Out_Actors.Reset();
 
-	const FGridLocation& StartGridLocation = FGridLocation(SearchGridLocation.X - Reach, SearchGridLocation.Y - Reach);
-	const FGridLocation& EndGridLocation = FGridLocation(SearchGridLocation.X + Reach, SearchGridLocation.Y + Reach);
+	const FGridCellLocation& StartGridLocation = FGridCellLocation(SearchGridLocation.X - Reach, SearchGridLocation.Y - Reach);
+	const FGridCellLocation& EndGridLocation = FGridCellLocation(SearchGridLocation.X + Reach, SearchGridLocation.Y + Reach);
 
-	FGridLocation CurrentGridLocation = StartGridLocation;
+	FGridCellLocation CurrentGridLocation = StartGridLocation;
 	while(CurrentGridLocation.X <= EndGridLocation.X)
 	{
 		while(CurrentGridLocation.Y <= EndGridLocation.Y)
@@ -96,24 +98,27 @@ void USpatialGridSubsystem::GetActorsInRegion(const FVector& Location, const flo
 	}
 }
 
-void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridLocation& GridLocation, TArray<int>& Out_Indices) const
+void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const
 {
 	if(!IsValidGridLocation(GridLocation)) return;
 
 	Out_Indices.Reset();
-	const uint64 IndicesPresentAtLocation = Blocks_X[GridLocation.X] & Blocks_Y[GridLocation.Y];
-
-	for(int BitLocation = 0; BitLocation < BITMASK_LENGTH; ++BitLocation)
+	for(uint32 BlockLevel = 0; BlockLevel < BLOCK_SIZE; ++BlockLevel)
 	{
-		const uint64 FilteredBlock = IndicesPresentAtLocation & (static_cast<uint64>(1) << BitLocation);
-		if(FilteredBlock != 0)
+		const uint64 IndicesInThisBlock = RowBlocks[GridLocation.X][BlockLevel] & ColumnBlocks[GridLocation.Y][BlockLevel];
+
+		for(int BitLocation = 0; BitLocation < BIT_ROW_SIZE; ++BitLocation)
 		{
-			Out_Indices.Add(BitLocation);
+			const uint64 FilteredBlock = IndicesInThisBlock & (static_cast<uint64>(1) << BitLocation);
+			if(FilteredBlock != 0)
+			{
+				Out_Indices.Add(BlockLevel * BLOCK_SIZE + BitLocation);
+			}
 		}
 	}
 }
 
-bool USpatialGridSubsystem::ConvertWorldToGridLocation(FVector WorldLocation, FGridLocation& Out_GridLocation) const
+bool USpatialGridSubsystem::ConvertWorldToGridLocation(FVector WorldLocation, FGridCellLocation& Out_GridLocation) const
 {
 	if(!GridParameters || !IsValidWorldLocation(WorldLocation)) return false;
 
@@ -128,7 +133,7 @@ bool USpatialGridSubsystem::ConvertWorldToGridLocation(FVector WorldLocation, FG
 	return true;
 }
 
-bool USpatialGridSubsystem::ConvertGridToWorldLocation(FGridLocation GridLocation, FVector& Out_WorldLocation) const
+bool USpatialGridSubsystem::ConvertGridToWorldLocation(FGridCellLocation GridLocation, FVector& Out_WorldLocation) const
 {
 	if(!GridParameters || !IsValidGridLocation(GridLocation)) return false;
 
@@ -157,20 +162,23 @@ bool USpatialGridSubsystem::IsValidWorldLocation(const FVector& WorldLocation) c
 	return GridParameters->Range.Contains(WorldLocation.X) && GridParameters->Range.Contains(WorldLocation.Y);
 }
 
-bool USpatialGridSubsystem::IsValidGridLocation(const FGridLocation& GridLocation) const
+bool USpatialGridSubsystem::IsValidGridLocation(const FGridCellLocation& GridLocation) const
 {
 	if(!GridParameters) return false;
-	return Blocks_X.IsValidIndex(GridLocation.X) && Blocks_Y.IsValidIndex(GridLocation.Y);
+	return RowBlocks.IsValidIndex(GridLocation.X) && ColumnBlocks.IsValidIndex(GridLocation.Y);
 }
 
 void USpatialGridSubsystem::ResetBlocks()
 {
 	if(!GridParameters) return;
 	
-	for(int BlockIndex = 0; BlockIndex < NumBlocks; ++BlockIndex)
+	for(uint32 BlockIndex = 0; BlockIndex < NumBlocks; ++BlockIndex)
 	{
-		Blocks_X[BlockIndex] = 0;
-		Blocks_Y[BlockIndex] = 0;
+		for(int BlockLevel = 0; BlockLevel < BLOCK_SIZE; ++BlockLevel)
+		{
+			RowBlocks[BlockIndex][BlockLevel] = 0;
+			ColumnBlocks[BlockIndex][BlockLevel] = 0;
+		}
 	}
 }
 
@@ -196,7 +204,7 @@ void USpatialGridSubsystem::DrawGrid() const
 	}
 }
 
-void USpatialGridSubsystem::DrawCell(const FGridLocation& GridLocation) const
+void USpatialGridSubsystem::DrawCell(const FGridCellLocation& GridLocation) const
 {
 	if(!GridParameters) return;
 	if(!GridParameters->bDrawDebugBox) return;
