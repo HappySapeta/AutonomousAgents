@@ -45,9 +45,6 @@ protected:
 	// 1. Initialize variables.
 	virtual void BeginPlay() override;
 	
-	// Get all agents that fall in the specified view cone.
-	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const;
-	
 	// Is the agent not surrounded by other agents.
 	bool CanAgentLead() const;
 
@@ -59,10 +56,9 @@ private:
 	void InvokeBehaviours();
 	
 	void ResetBehaviours();
-	void BindEventToGridSubsystem();
+	
+	void FetchGridSubsystem();
 
-	UFUNCTION()
-	void HandleActorPresenceUpdated(AActor* Actor);
 	void SenseNearbyAgents();
 
 protected:
@@ -89,6 +85,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Sense")
 	FName AgentsTag;
 
+	// Tag used to identify other agents.
+	UPROPERTY(EditAnywhere, Category = "Debug")
+	bool bDebugOtherAgents = false;
+
+	// Tag used to identify other agents.
+	UPROPERTY(EditAnywhere, Category = "Debug", meta = (EditCondition = "bDebugOtherAgents", EditConditionHides = "true"))
+	FColor DebugColor;
+
+	// Tag used to identify other agents.
+	UPROPERTY(EditAnywhere, Category = "Debug", meta = (EditCondition = "bDebugOtherAgents", EditConditionHides = "true"))
+	float DebugBoxSize;
+
 protected:
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
@@ -96,7 +104,7 @@ protected:
 	bool bForceLeadership = false;
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
-	UPROPERTY(EditAnywhere, Category = "Movement", meta = (EditCondition = "bForceLeadership", EditConditionHides = "true"))
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (EditCondition = "!bForceLeadership", EditConditionHides = "true"))
 	FSearchParameters LeaderSearchParameters;
 
 protected:
@@ -109,7 +117,6 @@ protected:
 	
 private:
 
-	FActorArray AllAgents;
 	FActorArray NearbyAgents;
 	
 	FWeakActorPtr ChaseTarget;

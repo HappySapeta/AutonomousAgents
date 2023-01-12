@@ -12,21 +12,6 @@ AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void AAgentsSandboxLevelScript::BeginPlay()
-{
-	Super::BeginPlay();
-	if(!bInitiallized)
-	{
-		Initialize();
-	}
-}
-
-void AAgentsSandboxLevelScript::Initialize()
-{
-	FetchGridSubsystem();
-	bInitiallized = true;
-}
-
 void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -36,29 +21,15 @@ void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 	}
 }
 
-void AAgentsSandboxLevelScript::FetchGridSubsystem()
-{
-	if(const UGameInstance* GameInstance = GetGameInstance())
-	{
-		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();	
-	}
-}
-
-void AAgentsSandboxLevelScript::SpawnAgent(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters)
-{
-	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
-	SpawnedAgents.Add(NewAgent);
-
-	if(SpatialGridSubsystem)
-	{
-		SpatialGridSubsystem->RegisterActor(NewAgent);
-	}
-}
-
 void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig)
 {
 	if(SpawnConfig == nullptr) return;
 	if(SpawnConfig->AgentClass == nullptr) return;
+
+	if(!SpatialGridSubsystem)
+	{
+		FetchGridSubsystem();
+	}
 	
 	FVector SpawnLocation = SpawnConfig->Origin - FVector(SpawnConfig->Span, SpawnConfig->Span, 0.0f);
 
@@ -81,6 +52,25 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 		
 		SpawnLocation.X += SpawnConfig->Separation;
 		SpawnLocation.Y = SpawnConfig->Origin.Y - SpawnConfig->Span;
+	}
+}
+
+void AAgentsSandboxLevelScript::SpawnAgent(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters)
+{
+	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
+	SpawnedAgents.Add(NewAgent);
+
+	if(SpatialGridSubsystem)
+	{
+		SpatialGridSubsystem->RegisterActor(NewAgent);
+	}
+}
+
+void AAgentsSandboxLevelScript::FetchGridSubsystem()
+{
+	if(const UGameInstance* GameInstance = GetGameInstance())
+	{
+		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();	
 	}
 }
 

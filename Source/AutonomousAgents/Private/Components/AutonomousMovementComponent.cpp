@@ -26,17 +26,12 @@ void UAutonomousMovementComponent::ResetBehaviours()
 	}
 }
 
-void UAutonomousMovementComponent::BindEventToGridSubsystem()
+void UAutonomousMovementComponent::FetchGridSubsystem()
 {
 	const UGameInstance* GameInstance = GetWorld()->GetGameInstance();
 	if(GameInstance != nullptr)
 	{
 		GridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
-		//if(GridSubsystem.IsValid())
-		//{
-		//	GridSubsystem->OnActorPresenceUpdatedEvent.AddDynamic(this, &UAutonomousMovementComponent::HandleActorPresenceUpdated);
-		//	GridSubsystem->GetAllActors(AllAgents);
-		//}
 	}
 }
 
@@ -46,45 +41,24 @@ void UAutonomousMovementComponent::BeginPlay()
 
 	PreviousLocation = GetOwner()->GetActorLocation();
 	ResetBehaviours();
-	BindEventToGridSubsystem();
-}
-
-void UAutonomousMovementComponent::HandleActorPresenceUpdated(AActor* Actor)
-{
-	if(Actor != nullptr)
-	{
-		if(AllAgents.Contains(Actor))
-		{
-			AllAgents.Remove(Actor);
-		}
-		else
-		{
-			AllAgents.Add(Actor);
-		}
-	}
+	FetchGridSubsystem();
 }
 
 void UAutonomousMovementComponent::SenseNearbyAgents()
 {
-	if(AllAgents.Num() == 0)
-	{
-		GridSubsystem->GetAllActors(AllAgents);
-	}
-	else
-	{
-		return;
-	}
-	
 	NearbyAgents.Reset();
-	if(!GridSubsystem.IsValid()) return;
-
-	TArray<int> NearbyAgentIndices;
-	GridSubsystem->GetActorIndicesInRegion(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgentIndices);
-	
-	for(const int Index : NearbyAgentIndices)
+	if(GridSubsystem.IsValid())
 	{
-		if(AllAgents[Index] == GetOwner()) continue;
-		NearbyAgents.Add(AllAgents[Index]);
+		GridSubsystem->GetActorsInRegion(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgents);
+		NearbyAgents.Remove(GetOwner());
+	}
+
+	if(bDebugOtherAgents)
+	{
+		for(const FWeakActorPtr& OtherAgent : NearbyAgents)
+		{
+			DrawDebugBox(GetWorld(), OtherAgent->GetActorLocation(), DebugBoxSize * FVector::OneVector , DebugColor);
+		}
 	}
 }
 
@@ -137,28 +111,23 @@ void UAutonomousMovementComponent::PhysicsUpdate(float DeltaTime)
 	PreviousLocation = NewLocation;
 }
 
-void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const
-{
-	AgentsInView.Reset();
-	for(const TWeakObjectPtr<AActor>& Agent : AllAgents)
-	{
-		if(Agent.IsValid() && Utility::IsPointInFOV(
-			GetOwner()->GetActorLocation(), GetOwner()->GetActorForwardVector(),Agent->GetActorLocation(),
-			MinimumSearchRadius, MaximumSearchRadius, FOVHalfAngle))
-		{
-			AgentsInView.Add(Agent);
-		}
-	}
-}
-
 bool UAutonomousMovementComponent::CanAgentLead() const
 {
-	FActorArray OtherAgents;
-	GetAgentsInView(
-		LeaderSearchParameters.SearchRadius.GetLowerBoundValue(),
-		LeaderSearchParameters.SearchRadius.GetUpperBoundValue(), LeaderSearchParameters.FOVHalfAngle, OtherAgents);
-
-	return OtherAgents.Num() == 0;
+	int NumAgentsInView = 0;
+	for(const TWeakObjectPtr<AActor>& Agent : NearbyAgents)
+	{
+		if(Agent.IsValid() && Utility::IsPointInFOV(
+			GetOwner()->GetActorLocation(), GetOwner()->GetActorForwardVector(),
+			Agent->GetActorLocation(),
+			LeaderSearchParameters.SearchRadius.GetLowerBoundValue(),
+			LeaderSearchParameters.SearchRadius.GetUpperBoundValue(),
+			LeaderSearchParameters.FOVHalfAngle))
+		{
+			++NumAgentsInView;
+		}
+	}
+	
+	return NumAgentsInView == 0;
 }
 
 void UAutonomousMovementComponent::SetChaseTarget(const TWeakObjectPtr<AActor>& NewTarget)

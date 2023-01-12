@@ -2,11 +2,6 @@
 
 #include "Subsystems/SpatialGridSubsystem.h"
 
-void USpatialGridSubsystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-}
-
 void USpatialGridSubsystem::InitializeGrid(UGridParameters* Parameters)
 {
 	if(Parameters == nullptr) return;
@@ -57,13 +52,10 @@ void USpatialGridSubsystem::UpdateGrid()
 
 void USpatialGridSubsystem::RegisterActor(const FWeakActorPtr& Actor)
 {
-	if(GridActors.AddUnique(Actor) >= 0)
-	{
-		OnActorPresenceUpdatedEvent.Broadcast(Actor.Get());
-	}
+	GridActors.AddUnique(Actor);
 }
 
-void USpatialGridSubsystem::GetActorIndicesInRegion(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const
+void USpatialGridSubsystem::GetActorsInRegion(const FVector& Location, const float Radius, FActorArray& Out_Actors) const
 {
 	if(!GridParameters) return;
 
@@ -75,7 +67,7 @@ void USpatialGridSubsystem::GetActorIndicesInRegion(const FVector& Location, con
 		return;
 	}
 	
-	Out_ActorIndices.Reset();
+	Out_Actors.Reset();
 
 	const FGridLocation& StartGridLocation = FGridLocation(SearchGridLocation.X - Reach, SearchGridLocation.Y - Reach);
 	const FGridLocation& EndGridLocation = FGridLocation(SearchGridLocation.X + Reach, SearchGridLocation.Y + Reach);
@@ -92,18 +84,16 @@ void USpatialGridSubsystem::GetActorIndicesInRegion(const FVector& Location, con
 				TArray<int> IndicesInThisCell;
 				GetIndicesInGridLocation(CurrentGridLocation, IndicesInThisCell);
 
-				Out_ActorIndices.Append(IndicesInThisCell);
+				for(const int Index : IndicesInThisCell)
+				{
+					Out_Actors.Add(GridActors[Index]);
+				}
 			}
 			CurrentGridLocation.Y += 1;
 		}
 		CurrentGridLocation.Y = StartGridLocation.Y;
 		CurrentGridLocation.X += 1;
 	}
-}
-
-void USpatialGridSubsystem::GetAllActors(FActorArray& Actors) const
-{
-	Actors = GridActors;
 }
 
 void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridLocation& GridLocation, TArray<int>& Out_Indices) const
@@ -186,6 +176,7 @@ void USpatialGridSubsystem::ResetBlocks()
 
 void USpatialGridSubsystem::DrawGrid() const
 {
+	if(!GridParameters) return;
 	if(!GridParameters->bDebug) return;
 
 	const float CellWidth = GridParameters->Range.Size<float>() / GridParameters->Resolution;

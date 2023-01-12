@@ -25,9 +25,6 @@ public:
 	AAgentsSandboxLevelScript();
 	
 	virtual void Tick(float DeltaSeconds) override;
-
-	UFUNCTION(BlueprintCallable)
-	void Initialize();
 	
 	UFUNCTION(BlueprintCallable)
 	void SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig);
@@ -37,10 +34,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
-
-protected:
-	
-	virtual void BeginPlay() override;
 
 private:
 
@@ -54,6 +47,4 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<USpatialGridSubsystem> SpatialGridSubsystem;
-
-	bool bInitiallized = false;
 };

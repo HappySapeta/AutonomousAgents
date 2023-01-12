@@ -32,8 +32,6 @@ class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActorPresenceUpdatedEvent, AActor*, UpdatedActor);
-
 public:
 
 	UFUNCTION(BlueprintCallable)
@@ -41,15 +39,11 @@ public:
 
 public:
 	
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
 	void Update();
 
 	void RegisterActor(const FWeakActorPtr& Actor);
 	
-	void GetActorIndicesInRegion(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const;
-
-	void GetAllActors(FActorArray& Actors) const; 
+	void GetActorsInRegion(const FVector& Location, const float Radius, FActorArray& Out_Actors) const;
 	
 	void DrawGrid() const;
 	
@@ -70,10 +64,6 @@ private:
 	bool IsValidWorldLocation(const FVector& WorldLocation) const;
 	
 	bool IsValidGridLocation(const FGridLocation& GridLocation) const;
-
-public:
-
-	FOnActorPresenceUpdatedEvent OnActorPresenceUpdatedEvent;
 
 private:
 
