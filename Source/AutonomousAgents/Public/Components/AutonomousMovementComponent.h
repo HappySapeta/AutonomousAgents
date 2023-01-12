@@ -9,10 +9,9 @@
 #include "Common/FSearchParameters.h"
 #include "AutonomousMovementComponent.generated.h"
 
-class USpatialGridSubsystem;
 // Forward declarations
+class USpatialGridSubsystem;
 class UBaseAutonomousBehaviour;
-class USphereComponent;
 
 /**
  * AutonomousMovementComponent applies a series of
@@ -45,11 +44,7 @@ protected:
 
 	// 1. Initialize variables.
 	virtual void BeginPlay() override;
-
-	UFUNCTION()
-	void HandleActorPresenceUpdated(AActor* Actor);
-	void DebugOtherActors();
-
+	
 	// Get all agents that fall in the specified view cone.
 	void GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const;
 	
@@ -61,18 +56,15 @@ private:
 	// Calculate velocity and new location from the net Movement Force.
 	virtual void PhysicsUpdate(float DeltaTime);
 
-	void InitializeSphereComponent();
-
+	void InvokeBehaviours();
+	
 	void ResetBehaviours();
-	
-	// Checks if an actor identifies itself as an agent.
-	UFUNCTION()
-	void OnEnterDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void BindEventToGridSubsystem();
 
-	// Check if an agent left the detection sphere.
 	UFUNCTION()
-	void OnExitDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
+	void HandleActorPresenceUpdated(AActor* Actor);
+	void SenseNearbyAgents();
+
 protected:
 
 	// Performs cosmetic updates.
@@ -86,37 +78,27 @@ protected:
 protected:
 
 	// Maximum speed of the agent.
-	UPROPERTY(EditAnywhere, Category = "Force Settings")
+	UPROPERTY(EditAnywhere, Category = "Movement")
 	float MaxSpeed = 100.0f;
 	
 	// Maximum speed of the agent.
-	UPROPERTY(EditAnywhere, Category = "Force Settings")
-	float DebugSenseRange = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Sense")
+	float AgentSenseRange = 300.0f;
 
 	// Tag used to identify other agents.
-	UPROPERTY(EditAnywhere, Category = "Common")
+	UPROPERTY(EditAnywhere, Category = "Sense")
 	FName AgentsTag;
 
 protected:
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
-	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (DisplayAfter = "AgentsTag"))
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (DisplayAfter = "AgentsTag"))
 	bool bForceLeadership = false;
 
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
-	UPROPERTY(EditAnywhere, Category = "Chase Settings", meta = (EditCondition = "bForceLeadership", EditConditionHides = "true"))
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (EditCondition = "bForceLeadership", EditConditionHides = "true"))
 	FSearchParameters LeaderSearchParameters;
 
-protected:
-
-	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
-	UPROPERTY(EditAnywhere, Category = "Debug Settings", meta = (DisplayAfter = "LeaderSearchParameters"))
-	bool bDebugSense = false;
-
-	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
-	UPROPERTY(EditAnywhere, Category = "Debug Settings", meta = (DisplayAfter = "bDebugSense"))
-	float DebugBoxSize = 100.0f;
-	
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Seeking", meta = (DisplayAfter = "ChaseConfig"))
@@ -127,15 +109,10 @@ protected:
 	
 private:
 
-	// Other agents in the vicinity.
-	FActorArray SensedAgents;
-
-	UPROPERTY()
-	TArray<AActor*> AllAgents;
+	FActorArray AllAgents;
+	FActorArray NearbyAgents;
 	
 	FWeakActorPtr ChaseTarget;
-
-	TWeakObjectPtr<USphereComponent> SphereComponent;
 	TWeakObjectPtr<USpatialGridSubsystem> GridSubsystem;
 	
 	FVector PreviousLocation = FVector::ZeroVector;

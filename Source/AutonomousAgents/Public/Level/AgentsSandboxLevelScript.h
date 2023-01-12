@@ -25,12 +25,12 @@ public:
 	AAgentsSandboxLevelScript();
 	
 	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION(BlueprintCallable)
+	void Initialize();
 	
 	UFUNCTION(BlueprintCallable)
 	void SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig);
-
-	UFUNCTION(BlueprintCallable)
-	void DestroyAllSpawnedActors();
 
 	UFUNCTION(BlueprintCallable)
 	void ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour, float Scale);
@@ -38,17 +38,22 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
 
-	UFUNCTION(BlueprintCallable)
-	void PutActorIntoGrid(AActor* Actor) const;
-
 protected:
 	
 	virtual void BeginPlay() override;
 
 private:
-	
-	TArray<TWeakObjectPtr<AAgentPawn>> SpawnedAgents;
 
-	UPROPERTY()
+	void FetchGridSubsystem();
+	
+	void SpawnAgent(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters);
+	
+private:
+
+	TArray<AAgentPawn*> SpawnedAgents;
+
+	UPROPERTY(Transient)
 	TObjectPtr<USpatialGridSubsystem> SpatialGridSubsystem;
+
+	bool bInitiallized = false;
 };

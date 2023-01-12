@@ -5,7 +5,6 @@
 #include "Behaviours/Base/BaseFlockingBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
 #include "Behaviours/Base/SeekingInterface.h"
-#include "Components/SphereComponent.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 
 UAutonomousMovementComponent::UAutonomousMovementComponent()
@@ -13,15 +12,9 @@ UAutonomousMovementComponent::UAutonomousMovementComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-void UAutonomousMovementComponent::InitializeSphereComponent()
-{
-	SphereComponent = GetOwner()->FindComponentByClass<USphereComponent>();
-	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnEnterDetection);
-	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &UAutonomousMovementComponent::OnExitDetection);
-}
-
 void UAutonomousMovementComponent::ResetBehaviours()
 {
+	// TODO: Remove redundant calls.
 	for(const auto& Behaviour : FlockingBehaviours)
 	{
 		Cast<UBaseAutonomousBehaviour>(Behaviour->GetDefaultObject())->ResetInfluence();
@@ -33,24 +26,27 @@ void UAutonomousMovementComponent::ResetBehaviours()
 	}
 }
 
+void UAutonomousMovementComponent::BindEventToGridSubsystem()
+{
+	const UGameInstance* GameInstance = GetWorld()->GetGameInstance();
+	if(GameInstance != nullptr)
+	{
+		GridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
+		//if(GridSubsystem.IsValid())
+		//{
+		//	GridSubsystem->OnActorPresenceUpdatedEvent.AddDynamic(this, &UAutonomousMovementComponent::HandleActorPresenceUpdated);
+		//	GridSubsystem->GetAllActors(AllAgents);
+		//}
+	}
+}
+
 void UAutonomousMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	PreviousLocation = GetOwner()->GetActorLocation();
-	
-	InitializeSphereComponent();
 	ResetBehaviours();
-
-	const UGameInstance* GameInstance = GetWorld()->GetGameInstance();
-	if(GameInstance != nullptr)
-	{
-		GridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
-		if(GridSubsystem.IsValid())
-		{
-			GridSubsystem->OnActorPresenceUpdatedEvent.AddDynamic(this, &UAutonomousMovementComponent::HandleActorPresenceUpdated);
-		}
-	}
+	BindEventToGridSubsystem();
 }
 
 void UAutonomousMovementComponent::HandleActorPresenceUpdated(AActor* Actor)
@@ -68,32 +64,34 @@ void UAutonomousMovementComponent::HandleActorPresenceUpdated(AActor* Actor)
 	}
 }
 
-void UAutonomousMovementComponent::DebugOtherActors()
+void UAutonomousMovementComponent::SenseNearbyAgents()
 {
-	if(bDebugSense)
+	if(AllAgents.Num() == 0)
 	{
-		if(GridSubsystem.IsValid())
-		{
-			TArray<int32> SensedActorIndices;
-			GridSubsystem->GetActorsInArea(GetOwner()->GetActorLocation(), DebugSenseRange, SensedActorIndices);
-			
-			for(const int Index : SensedActorIndices)
-			{
-				if(!AllAgents.IsValidIndex(Index)) continue;
-				
-				const AActor* OtherActor = AllAgents[Index];
-				if(OtherActor == nullptr || OtherActor == GetOwner()) continue;
-				
-				DrawDebugBox(GetWorld(), OtherActor->GetActorLocation(), FVector::One() * DebugBoxSize, FColor::Red, false, 0.05f);
-			}
-		}
+		GridSubsystem->GetAllActors(AllAgents);
+	}
+	else
+	{
+		return;
+	}
+	
+	NearbyAgents.Reset();
+	if(!GridSubsystem.IsValid()) return;
+
+	TArray<int> NearbyAgentIndices;
+	GridSubsystem->GetActorIndicesInRegion(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgentIndices);
+	
+	for(const int Index : NearbyAgentIndices)
+	{
+		if(AllAgents[Index] == GetOwner()) continue;
+		NearbyAgents.Add(AllAgents[Index]);
 	}
 }
 
-void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UAutonomousMovementComponent::InvokeBehaviours()
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
+	SenseNearbyAgents();
+
 	if(bForceLeadership || CanAgentLead())
 	{
 		for(const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SeekingBehaviours)
@@ -112,13 +110,17 @@ void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick Tic
 			const IFlockingInterface* FlockingBehaviour = Cast<IFlockingInterface>(Behaviour->GetDefaultObject());
 			if(!FlockingBehaviour) continue;
 
-			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), SensedAgents, MaxSpeed);
+			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), NearbyAgents, MaxSpeed);
 		}
 		SetIsFollowing.Broadcast();
 	}
+}
 
-	DebugOtherActors();
+void UAutonomousMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
+	InvokeBehaviours();
 	PhysicsUpdate(DeltaTime);
 }
 
@@ -138,7 +140,7 @@ void UAutonomousMovementComponent::PhysicsUpdate(float DeltaTime)
 void UAutonomousMovementComponent::GetAgentsInView(float MinimumSearchRadius, float MaximumSearchRadius, float FOVHalfAngle, FActorArray& AgentsInView) const
 {
 	AgentsInView.Reset();
-	for(const TWeakObjectPtr<AActor>& Agent : SensedAgents)
+	for(const TWeakObjectPtr<AActor>& Agent : AllAgents)
 	{
 		if(Agent.IsValid() && Utility::IsPointInFOV(
 			GetOwner()->GetActorLocation(), GetOwner()->GetActorForwardVector(),Agent->GetActorLocation(),
@@ -164,26 +166,5 @@ void UAutonomousMovementComponent::SetChaseTarget(const TWeakObjectPtr<AActor>& 
 	if(NewTarget.IsValid() && ChaseTarget != NewTarget)
 	{
 		ChaseTarget = NewTarget;
-	}
-}
-
-void UAutonomousMovementComponent::OnEnterDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if(IsValid(OtherActor) && OtherActor->Tags.Contains(AgentsTag))
-	{
-		if(!SensedAgents.Contains(OtherActor))
-		{
-			SensedAgents.Add(OtherActor);
-		}
-	}
-}
-
-void UAutonomousMovementComponent::OnExitDetection(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if(SensedAgents.Contains(OtherActor))
-	{
-		SensedAgents.Remove(OtherActor);
 	}
 }

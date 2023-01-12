@@ -5,8 +5,6 @@
 void USpatialGridSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-
-	InitializeGrid(NewObject<UGridParameters>());
 }
 
 void USpatialGridSubsystem::InitializeGrid(UGridParameters* Parameters)
@@ -65,7 +63,7 @@ void USpatialGridSubsystem::RegisterActor(const FWeakActorPtr& Actor)
 	}
 }
 
-void USpatialGridSubsystem::GetActorsInArea(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const
+void USpatialGridSubsystem::GetActorIndicesInRegion(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const
 {
 	if(!GridParameters) return;
 
@@ -90,7 +88,7 @@ void USpatialGridSubsystem::GetActorsInArea(const FVector& Location, const float
 			if(IsValidGridLocation(CurrentGridLocation))
 			{
 				DrawCell(CurrentGridLocation);
-
+				
 				TArray<int> IndicesInThisCell;
 				GetIndicesInGridLocation(CurrentGridLocation, IndicesInThisCell);
 
@@ -101,6 +99,11 @@ void USpatialGridSubsystem::GetActorsInArea(const FVector& Location, const float
 		CurrentGridLocation.Y = StartGridLocation.Y;
 		CurrentGridLocation.X += 1;
 	}
+}
+
+void USpatialGridSubsystem::GetAllActors(FActorArray& Actors) const
+{
+	Actors = GridActors;
 }
 
 void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridLocation& GridLocation, TArray<int>& Out_Indices) const
@@ -192,11 +195,11 @@ void USpatialGridSubsystem::DrawGrid() const
 	{
 		FVector LineStart = FVector(GridParameters->Range.GetLowerBoundValue(), VariableCoordinate, 0.0f);
 		FVector LineEnd = FVector(GridParameters->Range.GetUpperBoundValue(), VariableCoordinate, 0.0f);
-		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor, false, GridParameters->GridDebugDuration, 0, GridParameters->GridLineThickness);
+		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor);
 
 		LineStart = FVector(VariableCoordinate, GridParameters->Range.GetLowerBoundValue(), 0.0f);
 		LineEnd = FVector(VariableCoordinate, GridParameters->Range.GetUpperBoundValue(), 0.0f);
-		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor, false, GridParameters->GridDebugDuration, 0, GridParameters->GridLineThickness);
+		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor);
 
 		VariableCoordinate += CellWidth;
 	}
@@ -205,10 +208,11 @@ void USpatialGridSubsystem::DrawGrid() const
 void USpatialGridSubsystem::DrawCell(const FGridLocation& GridLocation) const
 {
 	if(!GridParameters) return;
+	if(!GridParameters->bDrawDebugBox) return;
 	if(!IsValidGridLocation(GridLocation)) return;
 
 	FVector WorldLocation;
 	ConvertGridToWorldLocation(GridLocation, WorldLocation);
 
-	DrawDebugBox(GetWorld(),  WorldLocation, GridParameters->DebugBoxSize * FVector::One(), GridParameters->DebugBoxColor, false, GridParameters->DebugBoxDuration, 0, GridParameters->DebugBoxThickness);
+	DrawDebugBox(GetWorld(),  WorldLocation, GridParameters->DebugBoxSize * FVector::One(), GridParameters->DebugBoxColor);
 }

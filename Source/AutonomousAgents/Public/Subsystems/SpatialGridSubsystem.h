@@ -47,8 +47,10 @@ public:
 
 	void RegisterActor(const FWeakActorPtr& Actor);
 	
-	void GetActorsInArea(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const;
+	void GetActorIndicesInRegion(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const;
 
+	void GetAllActors(FActorArray& Actors) const; 
+	
 	void DrawGrid() const;
 	
 	void DrawCell(const FGridLocation& GridLocation) const;

@@ -2,10 +2,10 @@
 
 #include "Level/AgentsSandboxLevelScript.h"
 
-#include "Behaviours/Base/BaseAutonomousBehaviour.h"
-#include "Common/AgentSpawnerConfig.h"
 #include "Core/AgentPawn.h"
+#include "Common/AgentSpawnerConfig.h"
 #include "Subsystems/SpatialGridSubsystem.h"
+#include "Behaviours/Base/BaseAutonomousBehaviour.h"
 
 AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 {
@@ -15,11 +15,16 @@ AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 void AAgentsSandboxLevelScript::BeginPlay()
 {
 	Super::BeginPlay();
-	const UGameInstance* GameInstance = GetGameInstance();
-	if(GameInstance)
+	if(!bInitiallized)
 	{
-		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
+		Initialize();
 	}
+}
+
+void AAgentsSandboxLevelScript::Initialize()
+{
+	FetchGridSubsystem();
+	bInitiallized = true;
 }
 
 void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
@@ -31,18 +36,29 @@ void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 	}
 }
 
-void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig)
+void AAgentsSandboxLevelScript::FetchGridSubsystem()
 {
-	if(SpawnConfig == nullptr) return;
-	if(SpawnConfig->AgentClass == nullptr) return;
-	
-	UWorld* World = GetWorld();
-	if(World == nullptr) return;
-
 	if(const UGameInstance* GameInstance = GetGameInstance())
 	{
 		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();	
 	}
+}
+
+void AAgentsSandboxLevelScript::SpawnAgent(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters)
+{
+	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
+	SpawnedAgents.Add(NewAgent);
+
+	if(SpatialGridSubsystem)
+	{
+		SpatialGridSubsystem->RegisterActor(NewAgent);
+	}
+}
+
+void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig)
+{
+	if(SpawnConfig == nullptr) return;
+	if(SpawnConfig->AgentClass == nullptr) return;
 	
 	FVector SpawnLocation = SpawnConfig->Origin - FVector(SpawnConfig->Span, SpawnConfig->Span, 0.0f);
 
@@ -59,32 +75,13 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 	{
 		while(SpawnLocation.Y >= LowerBound.Y && SpawnLocation.Y <= UpperBound.Y)
 		{
-			const TWeakObjectPtr<AAgentPawn>& NewAgent = Cast<AAgentPawn>(World->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
-			SpawnedAgents.Add(NewAgent);
-
-			if(SpatialGridSubsystem)
-			{
-				SpatialGridSubsystem->RegisterActor(NewAgent);
-			}
-			
+			SpawnAgent(SpawnConfig, SpawnLocation, SpawnParameters);
 			SpawnLocation.Y += SpawnConfig->Separation;
 		}
+		
 		SpawnLocation.X += SpawnConfig->Separation;
 		SpawnLocation.Y = SpawnConfig->Origin.Y - SpawnConfig->Span;
 	}
-}
-
-void AAgentsSandboxLevelScript::DestroyAllSpawnedActors()
-{
-	for(TWeakObjectPtr<AAgentPawn>& Agent : SpawnedAgents)
-	{
-		if(!Agent.IsValid())
-		{
-			continue;
-		}
-		Agent->Destroy();
-	}
-	SpawnedAgents.Reset();
 }
 
 void AAgentsSandboxLevelScript::ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour, float Scale)
@@ -102,14 +99,6 @@ void AAgentsSandboxLevelScript::ResetBehaviourInfluence(TSubclassOf<UBaseAutonom
 	if(Behaviour != nullptr)
 	{
 		Behaviour->ResetInfluence();	
-	}
-}
-
-void AAgentsSandboxLevelScript::PutActorIntoGrid(AActor* Actor) const
-{
-	if(SpatialGridSubsystem)
-	{
-		SpatialGridSubsystem->RegisterActor(Actor);
 	}
 }
 
