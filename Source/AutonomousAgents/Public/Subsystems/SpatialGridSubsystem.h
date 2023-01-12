@@ -65,7 +65,9 @@ public:
 
 	void RegisterActor(const FWeakActorPtr& Actor);
 	
-	void SearchActors(const FVector& Location, const float Radius, FActorArray& Out_Actors) const;
+	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
+
+	const FActorArray* GetAllActors() const;
 
 public:
 	

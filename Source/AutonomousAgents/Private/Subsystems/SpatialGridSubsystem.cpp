@@ -57,7 +57,7 @@ void USpatialGridSubsystem::RegisterActor(const FWeakActorPtr& Actor)
 	GridActors.AddUnique(Actor);
 }
 
-void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, FActorArray& Out_Actors) const
+void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const
 {
 	if(!GridParameters) return;
 
@@ -69,8 +69,6 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 		return;
 	}
 	
-	Out_Actors.Reset();
-
 	const FGridCellLocation& StartGridLocation = FGridCellLocation(SearchGridLocation.X - Reach, SearchGridLocation.Y - Reach);
 	const FGridCellLocation& EndGridLocation = FGridCellLocation(SearchGridLocation.X + Reach, SearchGridLocation.Y + Reach);
 
@@ -86,16 +84,18 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 				TArray<int> IndicesInThisCell;
 				GetIndicesInGridLocation(CurrentGridLocation, IndicesInThisCell);
 
-				for(const int Index : IndicesInThisCell)
-				{
-					Out_Actors.Add(GridActors[Index]);
-				}
+				Out_ActorIndices.Append(IndicesInThisCell);
 			}
 			CurrentGridLocation.Y += 1;
 		}
 		CurrentGridLocation.Y = StartGridLocation.Y;
 		CurrentGridLocation.X += 1;
 	}
+}
+
+const FActorArray* USpatialGridSubsystem::GetAllActors() const
+{
+	return &GridActors;
 }
 
 void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const

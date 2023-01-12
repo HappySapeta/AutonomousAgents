@@ -46,19 +46,10 @@ void UAutonomousMovementComponent::BeginPlay()
 
 void UAutonomousMovementComponent::SenseNearbyAgents()
 {
-	NearbyAgents.Reset();
+	NearbyAgentIndices.Reset();
 	if(GridSubsystem.IsValid())
 	{
-		GridSubsystem->SearchActors(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgents);
-		NearbyAgents.Remove(GetOwner());
-	}
-
-	if(bDebugOtherAgents)
-	{
-		for(const FWeakActorPtr& OtherAgent : NearbyAgents)
-		{
-			DrawDebugBox(GetWorld(), OtherAgent->GetActorLocation(), DebugBoxSize * FVector::OneVector , DebugColor);
-		}
+		GridSubsystem->SearchActors(GetOwner()->GetActorLocation(), AgentSenseRange, NearbyAgentIndices);
 	}
 }
 
@@ -78,12 +69,17 @@ void UAutonomousMovementComponent::InvokeBehaviours()
 	}
 	else
 	{
+		if(!GridSubsystem.IsValid())
+		{
+			return;
+		}
+		
 		for(const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : FlockingBehaviours)
 		{
 			const IFlockingInterface* FlockingBehaviour = Cast<IFlockingInterface>(Behaviour->GetDefaultObject());
 			if(!FlockingBehaviour) continue;
 
-			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), NearbyAgents, MaxSpeed);
+			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), GridSubsystem->GetAllActors(), NearbyAgentIndices, MaxSpeed);
 		}
 	}
 }
@@ -111,9 +107,14 @@ void UAutonomousMovementComponent::PhysicsUpdate(float DeltaTime)
 
 bool UAutonomousMovementComponent::CanAgentLead() const
 {
+	if(!GridSubsystem.IsValid()) return true;
+
 	int NumAgentsInView = 0;
-	for(const TWeakObjectPtr<AActor>& Agent : NearbyAgents)
+	const FActorArray* AllActors = GridSubsystem->GetAllActors();
+	for(const uint32 Index : NearbyAgentIndices)
 	{
+		const FWeakActorPtr& Agent = AllActors->operator[](Index);
+		
 		if(Agent.IsValid() && Utility::IsPointInFOV(
 			GetOwner()->GetActorLocation(), GetOwner()->GetActorForwardVector(),
 			Agent->GetActorLocation(),

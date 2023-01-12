@@ -19,6 +19,6 @@ class AUTONOMOUSAGENTS_API UAlignmentBehaviour : public UBaseFlockingBehaviour, 
 
 public:
 	
-	virtual FVector CalculateSteerForce(const FWeakActorPtr& SelfAgent, const FActorArray& NearbyAgents, const float MaxSpeed) const override;
-	
+	virtual FVector CalculateSteerForce(const FWeakActorPtr& SelfAgent, const FActorArray* AllActors,
+	                                    const TArray<uint32>& NearbyAgentIndices, const float MaxSpeed) const override;
 };

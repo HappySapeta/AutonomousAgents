@@ -105,7 +105,7 @@ protected:
 	
 private:
 
-	FActorArray NearbyAgents;
+	TArray<uint32> NearbyAgentIndices;
 	
 	FWeakActorPtr ChaseTarget;
 	TWeakObjectPtr<USpatialGridSubsystem> GridSubsystem;
