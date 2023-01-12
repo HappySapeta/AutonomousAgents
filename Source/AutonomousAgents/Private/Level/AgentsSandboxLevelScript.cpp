@@ -64,7 +64,7 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 
 			if(SpatialGridSubsystem)
 			{
-				SpatialGridSubsystem->PutActorIntoGrid(NewAgent);
+				SpatialGridSubsystem->RegisterActor(NewAgent);
 			}
 			
 			SpawnLocation.Y += SpawnConfig->Separation;
@@ -109,7 +109,7 @@ void AAgentsSandboxLevelScript::PutActorIntoGrid(AActor* Actor) const
 {
 	if(SpatialGridSubsystem)
 	{
-		SpatialGridSubsystem->PutActorIntoGrid(Actor);
+		SpatialGridSubsystem->RegisterActor(Actor);
 	}
 }
 

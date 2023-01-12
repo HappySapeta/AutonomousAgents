@@ -11,26 +11,32 @@ class UGridParameters : public UDataAsset
 public:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup", meta = (UIMin = "1", UIMax = "100", ClampMin = "1", ClampMax = "100"))
-	uint32 MaxActors = 100;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup", meta = (UIMin = "1", UIMax = "100", ClampMin = "1", ClampMax = "100"))
 	uint32 Resolution = 10;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup")
-	FFloatRange XRange = FFloatRange(-2000.0f, 2000.0f);
-
-	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup")
-	FFloatRange YRange = FFloatRange(-2000.0f, 2000.0f);
+	FFloatRange Range = FFloatRange(-2000.0f, 2000.0f);
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings")
 	bool bDebug = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
-	FColor Color = FColor::Green;
+	FColor GridColor = FColor::Green;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
-	float Thickness = 10.0f;
+	float GridLineThickness = 10.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
-	float Duration = 0.05f;
+	float GridDebugDuration = 0.05f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
+	FColor DebugBoxColor = FColor::Red;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
+	float DebugBoxSize = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
+	float DebugBoxThickness = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
+	float DebugBoxDuration = 0.05f;
 };

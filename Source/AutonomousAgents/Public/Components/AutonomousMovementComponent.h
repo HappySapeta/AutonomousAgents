@@ -112,6 +112,10 @@ protected:
 	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
 	UPROPERTY(EditAnywhere, Category = "Debug Settings", meta = (DisplayAfter = "LeaderSearchParameters"))
 	bool bDebugSense = false;
+
+	// Defines configuration used to detect other agents and determine if the agent becomes a follow or a seeker.
+	UPROPERTY(EditAnywhere, Category = "Debug Settings", meta = (DisplayAfter = "bDebugSense"))
+	float DebugBoxSize = 100.0f;
 	
 protected:
 

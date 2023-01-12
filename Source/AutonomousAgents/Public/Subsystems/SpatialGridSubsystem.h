@@ -5,27 +5,26 @@
 #include "CoreMinimal.h"
 #include "Common/CommonTypes.h"
 #include "Common/GridParameters.h"
-#include "Components/ActorComponent.h"
+#include "Math/MathFwd.h"
 #include "SpatialGridSubsystem.generated.h"
 
-#define BLOCK_SIZE 20
 #define BITMASK_LENGTH 64
 
 USTRUCT()
-struct FCellLocation
+struct FGridLocation
 {
 	GENERATED_BODY()
-
-	FCellLocation()
+	
+	FGridLocation()
 		: X(0), Y(0)
 	{}
 	
-	FCellLocation(const uint32 XIndex, const uint32 YIndex)
+	FGridLocation(const int XIndex, const int YIndex)
 		: X(XIndex), Y(YIndex)
 	{}
 	
-	uint32 X;
-	uint32 Y;
+	int X;
+	int Y;
 };
 
 UCLASS()
@@ -34,46 +33,41 @@ class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActorPresenceUpdatedEvent, AActor*, UpdatedActor);
-	
-public:
-
-	typedef TArray<uint64, TInlineAllocator<BLOCK_SIZE>> FBitBlock;
 
 public:
-
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	UFUNCTION(BlueprintCallable)
-	void InitGrid(UGridParameters* Parameters);
+	void InitializeGrid(UGridParameters* Parameters);
+
+public:
+	
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	void Update();
 
-	void PutActorIntoGrid(const FWeakActorPtr& Actor);
+	void RegisterActor(const FWeakActorPtr& Actor);
 	
-	void GetActorNearLocation(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
-	void DrawGrid() const;
+	void GetActorsInArea(const FVector& Location, const float Radius, TArray<int>& Out_ActorIndices) const;
 
-	void DebugGrid() const;
+	void DrawGrid() const;
+	
+	void DrawCell(const FGridLocation& GridLocation) const;
 
 private:
 	
 	void UpdateGrid();
 
-	static void GetIndicesFromBlock(const FBitBlock& Block, TArray<uint32>& Out_Indices);
-
-	static void GetIndicesFromMask(const uint64 BitMask, uint32 Offset, TArray<uint32>& Out_Indices);
-	
-	void DrawActors(const FVector& Anchor, TArray<uint32> ActorIndices) const;
-	
-	void GetActorsInCell(const FCellLocation& CellLocation, TArray<uint32>& Indices) const;
+	void GetIndicesInGridLocation(const FGridLocation& GridLocation, TArray<int>& Out_Indices) const;
 	
 	void ResetBlocks();
 
-	void InitializeBlocks();
+	bool ConvertWorldToGridLocation(FVector WorldLocation, FGridLocation& Out_GridLocation) const;
 
-	FCellLocation ConvertCoordinatesToCellLocation(FVector Coordinates) const;
+	bool ConvertGridToWorldLocation(FGridLocation GridLocation, FVector& Out_WorldLocation) const;
 
-	bool IsValidCoordinate(const FVector& Coordinate) const;
+	bool IsValidWorldLocation(const FVector& WorldLocation) const;
+	
+	bool IsValidGridLocation(const FGridLocation& GridLocation) const;
 
 public:
 
@@ -81,11 +75,13 @@ public:
 
 private:
 
+	int NumBlocks;
+	
 	FActorArray GridActors;
 
 	UPROPERTY(Transient)
 	UGridParameters* GridParameters;
 
-	TArray<FBitBlock> XBlocks;
-	TArray<FBitBlock> YBlocks;
+	TArray<uint64> Blocks_X;
+	TArray<uint64> Blocks_Y;
 };

@@ -74,15 +74,17 @@ void UAutonomousMovementComponent::DebugOtherActors()
 	{
 		if(GridSubsystem.IsValid())
 		{
-			TArray<uint32> SensedActorIndices;
-			GridSubsystem->GetActorNearLocation(GetOwner()->GetActorLocation(), DebugSenseRange, SensedActorIndices);
+			TArray<int32> SensedActorIndices;
+			GridSubsystem->GetActorsInArea(GetOwner()->GetActorLocation(), DebugSenseRange, SensedActorIndices);
 			
-			for(int i = 0; i < SensedActorIndices.Num(); ++i)
+			for(const int Index : SensedActorIndices)
 			{
-				const AActor* OtherActor = AllAgents[i];
-				if(OtherActor == nullptr) continue;
+				if(!AllAgents.IsValidIndex(Index)) continue;
 				
-				DrawDebugBox(GetWorld(), OtherActor->GetActorLocation(), FVector(100.0f, 100.0f, 100.0f), FColor::Red, false, 0.05f);
+				const AActor* OtherActor = AllAgents[Index];
+				if(OtherActor == nullptr || OtherActor == GetOwner()) continue;
+				
+				DrawDebugBox(GetWorld(), OtherActor->GetActorLocation(), FVector::One() * DebugBoxSize, FColor::Red, false, 0.05f);
 			}
 		}
 	}
