@@ -19,5 +19,5 @@ class AUTONOMOUSAGENTS_API USeparationBehaviour : public UBaseFlockingBehaviour,
 
 public:
 	
-	virtual FVector CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const override;
+	virtual FVector CalculateSteerForce(const FWeakActorPtr& SelfAgent, const FActorArray& NearbyAgents, const float MaxSpeed) const override;
 };

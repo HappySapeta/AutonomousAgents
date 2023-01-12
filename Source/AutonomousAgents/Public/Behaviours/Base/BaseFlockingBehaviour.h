@@ -20,27 +20,18 @@ class AUTONOMOUSAGENTS_API UBaseFlockingBehaviour : public UBaseAutonomousBehavi
 	GENERATED_BODY()
 
 protected:
-	
-	// Get all agents that fall in the specified view cone.
-	void GetAgentsInView(const FWeakActorPtr& ViewingActor, const FActorArray& FromAgents, FActorArray& Out_AgentsInView) const;
-	
+
+	bool CanAgentAffect(const FWeakActorPtr& SelfAgent, const FWeakActorPtr& OtherAgent) const
+	{
+		return Utility::IsPointInFOV(
+			SelfAgent->GetActorLocation(), SelfAgent->GetActorForwardVector(), OtherAgent->GetActorLocation(),
+			SearchConfig.SearchRadius.GetUpperBoundValue(),
+			SearchConfig.SearchRadius.GetUpperBoundValue(),
+			SearchConfig.FOVHalfAngle);
+	}
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Configuration", meta = (EditCondition = "bIsEnabled", EditConditionHides = "true"))
 	FSearchParameters SearchConfig;
 };
 
-inline void UBaseFlockingBehaviour::GetAgentsInView(const FWeakActorPtr& ViewingActor, const FActorArray& FromAgents, FActorArray& Out_AgentsInView) const
-{
-	if (!ViewingActor.IsValid()) return;
-
-	Out_AgentsInView.Reset();
-	for (const FWeakActorPtr& Agent : FromAgents)
-	{
-		if (Agent.IsValid() && Utility::IsPointInFOV(
-			ViewingActor->GetActorLocation(), ViewingActor->GetActorForwardVector(), Agent->GetActorLocation(),
-			SearchConfig.SearchRadius.GetLowerBoundValue(), SearchConfig.SearchRadius.GetUpperBoundValue(), SearchConfig.FOVHalfAngle))
-		{
-			Out_AgentsInView.Add(Agent);
-		}
-	}
-}

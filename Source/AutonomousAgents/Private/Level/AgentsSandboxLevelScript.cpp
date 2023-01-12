@@ -41,24 +41,30 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 	SpawnParameters.bHideFromSceneOutliner = SpawnConfig->bHideFromSceneOutliner;
 #endif
 	SpawnParameters.ObjectFlags |= RF_Transient;
-	
+
+	uint32 NumAgentsSpawned = 0;
 	while(SpawnLocation.X >= LowerBound.X && SpawnLocation.X <= UpperBound.X)
 	{
 		while(SpawnLocation.Y >= LowerBound.Y && SpawnLocation.Y <= UpperBound.Y)
 		{
-			SpawnAgent(SpawnConfig, SpawnLocation, SpawnParameters);
+			SpawnActor(SpawnConfig, SpawnLocation, SpawnParameters);
+			++NumAgentsSpawned;
 			SpawnLocation.Y += SpawnConfig->Separation;
 		}
 		
 		SpawnLocation.X += SpawnConfig->Separation;
 		SpawnLocation.Y = SpawnConfig->Origin.Y - SpawnConfig->Span;
 	}
+
+	const FString Message = FString::Printf(TEXT("[AgentsSandboxLevelScript][SpawnActorsImmediately] %d Actors were spawned."), NumAgentsSpawned);
+	
+	UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Message);
 }
 
-void AAgentsSandboxLevelScript::SpawnAgent(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters)
+void AAgentsSandboxLevelScript::SpawnActor(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters) const
 {
 	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
-	SpawnedAgents.Add(NewAgent);
 
 	if(SpatialGridSubsystem)
 	{

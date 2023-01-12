@@ -2,32 +2,37 @@
 
 #include "Behaviours/CohesionBehaviour.h"
 
-FVector UCohesionBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const
+FVector UCohesionBehaviour::CalculateSteerForce(const FWeakActorPtr& SelfAgent, const FActorArray& NearbyAgents,
+                                                const float MaxSpeed) const
 {
-	if(!bIsEnabled || !Affector.IsValid()) return FVector::ZeroVector;
-	
-	FVector SteeringInput = FVector::ZeroVector;
+	if (!bIsEnabled || !SelfAgent.IsValid()) return FVector::ZeroVector;
 
-	FActorArray CohesionAgents;
-	GetAgentsInView(Affector, NearbyAgents, CohesionAgents);
-	
-	if(CohesionAgents.Num() > 0)
+	FVector SteeringInput = FVector::ZeroVector;
+	FVector HerdLocation = FVector::ZeroVector;
+	uint32 NumCohesiveAgents = 0;
+
+	for (const FWeakActorPtr& OtherAgent : NearbyAgents)
 	{
-		FVector HerdLocation = FVector::ZeroVector;
-		for(const FWeakActorPtr& OtherAgent : CohesionAgents)
+		if(!OtherAgent.IsValid() || !CanAgentAffect(SelfAgent, OtherAgent))
 		{
-			const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
-			HerdLocation += OtherAgentLocation;
-			
-			if(bShouldDebug)
-			{
-				DrawDebugLine(GetWorld(), Affector->GetActorLocation(), OtherAgentLocation, FColor::Blue, false, 0.02f, 0, 5.0f);
-			}
+			continue;
 		}
 
-		HerdLocation /= CohesionAgents.Num();
-		const FVector& DesiredVelocity = (HerdLocation - Affector->GetActorLocation()).GetSafeNormal() * MaxSpeed;
-		const FVector& CohesionManeuver = DesiredVelocity - Affector->GetVelocity();
+		++NumCohesiveAgents;
+		const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
+		HerdLocation += OtherAgentLocation;
+
+		if (bShouldDebug)
+		{
+			DrawDebugLine(GetWorld(), SelfAgent->GetActorLocation(), OtherAgentLocation, FColor::Blue);
+		}
+	}
+
+	if (NumCohesiveAgents > 0)
+	{
+		HerdLocation /= NumCohesiveAgents;
+		const FVector& DesiredVelocity = (HerdLocation - SelfAgent->GetActorLocation()).GetSafeNormal() * MaxSpeed;
+		const FVector& CohesionManeuver = DesiredVelocity - SelfAgent->GetVelocity();
 		SteeringInput = CohesionManeuver * Influence * InfluenceScale;
 	}
 

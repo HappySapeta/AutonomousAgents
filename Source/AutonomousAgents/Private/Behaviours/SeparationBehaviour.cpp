@@ -2,41 +2,45 @@
 
 #include "Behaviours/SeparationBehaviour.h"
 
-FVector USeparationBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const
+FVector USeparationBehaviour::CalculateSteerForce(const FWeakActorPtr& SelfAgent, const FActorArray& NearbyAgents, const float MaxSpeed) const
 {
-	if(!bIsEnabled || !Affector.IsValid()) return FVector::ZeroVector;
+	if(!bIsEnabled || !SelfAgent.IsValid()) return FVector::ZeroVector;
 	
 	FVector SteeringInput = FVector::ZeroVector;
-
-	FActorArray SeparationAgents;
-	GetAgentsInView(Affector, NearbyAgents, SeparationAgents);
+	FVector AvoidanceVector = FVector::ZeroVector;
+	uint32 NumAvoidableAgents = 0;
 	
-	if(SeparationAgents.Num() > 0)
+	for(const TWeakObjectPtr<AActor>& OtherAgent : NearbyAgents)
 	{
-		FVector AvoidanceVector = FVector::ZeroVector;
-
-		for(const TWeakObjectPtr<AActor>& OtherAgent : SeparationAgents)
+		if(!OtherAgent.IsValid() || !CanAgentAffect(SelfAgent, OtherAgent))
 		{
-			const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
-		
-			FVector OtherAgentVector = Affector->GetActorLocation() - OtherAgentLocation;
-			const float OtherAgentDistance = OtherAgentVector.Length();
-			
-			OtherAgentVector = OtherAgentVector.GetSafeNormal() / OtherAgentDistance;
-			AvoidanceVector += OtherAgentVector;
-			
-			if(bShouldDebug)
-			{
-				DrawDebugLine(GetWorld(), Affector->GetActorLocation(), OtherAgentLocation, FColor::Red, false, 0.02f, 0, 5.0f);
-			}
+			continue;
 		}
 
-		AvoidanceVector /= SeparationAgents.Num();
-		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
-
-		const FVector& SeparationManeuver = AvoidanceVector - Affector->GetVelocity();
-		SteeringInput = SeparationManeuver * Influence * InfluenceScale;
+		++NumAvoidableAgents;
+		
+		const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
+		
+		FVector OtherAgentVector = SelfAgent->GetActorLocation() - OtherAgentLocation;
+		const float OtherAgentDistance = OtherAgentVector.Length();
+			
+		OtherAgentVector = OtherAgentVector.GetSafeNormal() / OtherAgentDistance;
+		AvoidanceVector += OtherAgentVector;
+			
+		if(bShouldDebug)
+		{
+			DrawDebugLine(GetWorld(), SelfAgent->GetActorLocation(), OtherAgentLocation, FColor::Red, false, 0.02f, 0, 5.0f);
+		}
 	}
 
+	if(NumAvoidableAgents > 0)
+	{
+		AvoidanceVector /= NumAvoidableAgents;
+		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
+
+		const FVector& SeparationManeuver = AvoidanceVector - SelfAgent->GetVelocity();
+		SteeringInput = SeparationManeuver * Influence * InfluenceScale;
+	}
+	
 	return SteeringInput;
 }

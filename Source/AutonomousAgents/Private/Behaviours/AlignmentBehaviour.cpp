@@ -2,34 +2,38 @@
 
 #include "Behaviours/AlignmentBehaviour.h"
 
-FVector UAlignmentBehaviour::CalculateSteerForce(const FWeakActorPtr& Affector, const FActorArray& NearbyAgents, const float MaxSpeed) const
+FVector UAlignmentBehaviour::CalculateSteerForce(const FWeakActorPtr& SelfAgent, const FActorArray& NearbyAgents, const float MaxSpeed) const
 {
-	if(!bIsEnabled || !Affector.IsValid()) return FVector::ZeroVector;
+	if(!bIsEnabled || !SelfAgent.IsValid()) return FVector::ZeroVector;
 
 	FVector SteeringInput = FVector::ZeroVector;
+	FVector AverageFlockVelocity = FVector::ZeroVector;
+	uint32 NumAlignmentAgents = 0;
 
-	FActorArray AlignmentAgents;
-	GetAgentsInView(Affector, NearbyAgents, AlignmentAgents);
-	
-	if(AlignmentAgents.Num() > 0)
+	for(const FWeakActorPtr& OtherAgent : NearbyAgents)
 	{
-		FVector AverageFlockVelocity = FVector::ZeroVector;
-		for(const TWeakObjectPtr<AActor>& OtherAgent : AlignmentAgents)
+		if(!OtherAgent.IsValid() || !CanAgentAffect(SelfAgent, OtherAgent))
 		{
-			AverageFlockVelocity += OtherAgent->GetVelocity();
-			
-			if(bShouldDebug)
-			{
-				DrawDebugLine(GetWorld(), Affector->GetActorLocation(), OtherAgent->GetActorLocation(), FColor::Yellow, false, 0.02f, 0, 5.0f);
-			}
+			continue;
 		}
 
-		AverageFlockVelocity /= AlignmentAgents.Num();
-		AverageFlockVelocity = AverageFlockVelocity.GetSafeNormal() * MaxSpeed;
-
-		const FVector& AlignmentManeuver = AverageFlockVelocity - Affector->GetVelocity();
-		SteeringInput = AlignmentManeuver * Influence * InfluenceScale;
+		++NumAlignmentAgents;
+		AverageFlockVelocity += OtherAgent->GetVelocity();
+			
+		if(bShouldDebug)
+		{
+			DrawDebugLine(GetWorld(), SelfAgent->GetActorLocation(), OtherAgent->GetActorLocation(), FColor::Yellow, false, 0.02f, 0, 5.0f);
+		}
 	}
 
+	if(NumAlignmentAgents > 0)
+	{
+		AverageFlockVelocity /= NumAlignmentAgents;
+		AverageFlockVelocity = AverageFlockVelocity.GetSafeNormal() * MaxSpeed;
+
+		const FVector& AlignmentManeuver = AverageFlockVelocity - SelfAgent->GetVelocity();
+		SteeringInput = AlignmentManeuver * Influence * InfluenceScale;
+	}
+	
 	return SteeringInput;
 }

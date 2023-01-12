@@ -7,10 +7,9 @@
 #include "AgentsSandboxLevelScript.generated.h"
 
 // Forward declarations
+class UAgentSpawnerConfig;
 class USpatialGridSubsystem;
 class UBaseAutonomousBehaviour;
-class UAgentSpawnerConfig;
-class AAgentPawn;
 
 /**
  * 
@@ -39,12 +38,10 @@ private:
 
 	void FetchGridSubsystem();
 	
-	void SpawnAgent(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters);
+	void SpawnActor(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters) const;
 	
 private:
-
-	TArray<AAgentPawn*> SpawnedAgents;
-
+	
 	UPROPERTY(Transient)
 	TObjectPtr<USpatialGridSubsystem> SpatialGridSubsystem;
 };
