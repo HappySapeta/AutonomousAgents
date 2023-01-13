@@ -8,7 +8,7 @@
 #include "Math/MathFwd.h"
 #include "SpatialGridSubsystem.generated.h"
 
-#define BIT_ROW_SIZE 64
+#define BIT_ROW_LENGTH 64
 #define BLOCK_SIZE 20
 
 USTRUCT()
@@ -51,6 +51,15 @@ struct FBitBlock
 	TArray<uint64, TInlineAllocator<BLOCK_SIZE>> BitRow;
 };
 
+USTRUCT()
+struct FBlockArray
+{
+	GENERATED_BODY();
+	
+	TArray<FBitBlock> RowBlocks;
+	TArray<FBitBlock> ColumnBlocks;
+};
+
 UCLASS()
 class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 {
@@ -59,7 +68,7 @@ class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 public:
 
 	UFUNCTION(BlueprintCallable)
-	void InitializeGrid(UGridParameters* Parameters);
+	void InitializeGrid(const UGridParameters* Parameters);
 	
 	void Update();
 
@@ -67,7 +76,7 @@ public:
 	
 	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
 
-	const FActorArray* GetAllActors() const;
+	const FActorArray* GetActorArray() const;
 
 public:
 	
@@ -80,16 +89,16 @@ private:
 	void UpdateGrid();
 
 	void GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const;
-	
-	void ResetBlocks();
 
 	bool ConvertWorldToGridLocation(FVector WorldLocation, FGridCellLocation& Out_GridLocation) const;
 
-	bool ConvertGridToWorldLocation(FGridCellLocation GridLocation, FVector& Out_WorldLocation) const;
+	bool ConvertGridToWorldLocation(const FGridCellLocation& GridLocation, FVector& Out_WorldLocation) const;
 
 	bool IsValidWorldLocation(const FVector& WorldLocation) const;
-	
+
 	bool IsValidGridLocation(const FGridCellLocation& GridLocation) const;
+
+	void ResetBlocks();
 
 private:
 
@@ -98,7 +107,7 @@ private:
 	FActorArray GridActors;
 
 	UPROPERTY(Transient)
-	UGridParameters* GridParameters;
+	const UGridParameters* GridParameters;
 
 	TArray<FBitBlock> RowBlocks;
 	TArray<FBitBlock> ColumnBlocks;

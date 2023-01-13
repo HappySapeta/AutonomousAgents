@@ -79,7 +79,7 @@ void UAutonomousMovementComponent::InvokeBehaviours()
 			const IFlockingInterface* FlockingBehaviour = Cast<IFlockingInterface>(Behaviour->GetDefaultObject());
 			if(!FlockingBehaviour) continue;
 
-			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), GridSubsystem->GetAllActors(), NearbyAgentIndices, MaxSpeed);
+			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), GridSubsystem->GetActorArray(), NearbyAgentIndices, MaxSpeed);
 		}
 	}
 }
@@ -110,7 +110,7 @@ bool UAutonomousMovementComponent::CanAgentLead() const
 	if(!GridSubsystem.IsValid()) return true;
 
 	int NumAgentsInView = 0;
-	const FActorArray* AllActors = GridSubsystem->GetAllActors();
+	const FActorArray* AllActors = GridSubsystem->GetActorArray();
 	for(const uint32 Index : NearbyAgentIndices)
 	{
 		const FWeakActorPtr& Agent = AllActors->operator[](Index);
