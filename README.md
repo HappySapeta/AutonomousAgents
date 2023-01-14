@@ -4,7 +4,7 @@ Flocking behaviour model based on Craig Reynold's Algorithms for Autonomous Agen
 
 Features :
 1. Replaceable and modifiable behaviours.
-2. Adjustable parameters.
+2. Spatial Grid Optimization.
 
 Demo :
 
