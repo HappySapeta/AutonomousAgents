@@ -1,5 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "Components/AutonomousMovementComponent.h"
 #include "Common/Utility.h"
 #include "Behaviours/Base/BaseFlockingBehaviour.h"
