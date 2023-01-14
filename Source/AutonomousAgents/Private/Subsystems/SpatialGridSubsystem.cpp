@@ -194,11 +194,13 @@ void USpatialGridSubsystem::DrawGrid() const
 	{
 		FVector LineStart = FVector(GridParameters->Range.GetLowerBoundValue(), VariableCoordinate, 0.0f);
 		FVector LineEnd = FVector(GridParameters->Range.GetUpperBoundValue(), VariableCoordinate, 0.0f);
-		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor);
+		
+		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor, true);
 
 		LineStart = FVector(VariableCoordinate, GridParameters->Range.GetLowerBoundValue(), 0.0f);
 		LineEnd = FVector(VariableCoordinate, GridParameters->Range.GetUpperBoundValue(), 0.0f);
-		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor);
+		
+		DrawDebugLine(GetWorld(), LineStart, LineEnd, GridParameters->GridColor, true);
 
 		VariableCoordinate += CellWidth;
 	}
