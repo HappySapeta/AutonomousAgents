@@ -25,7 +25,7 @@ protected:
 	{
 		return Utility::IsPointInFOV(
 			SelfAgent->GetActorLocation(), SelfAgent->GetActorForwardVector(), OtherAgent->GetActorLocation(),
-			SearchConfig.SearchRadius.GetUpperBoundValue(),
+			SearchConfig.SearchRadius.GetLowerBoundValue(),
 			SearchConfig.SearchRadius.GetUpperBoundValue(),
 			SearchConfig.FOVHalfAngle);
 	}
