@@ -1,21 +1,23 @@
 ﻿
 #include "Behaviours/DirectSeekBehaviour.h"
 
-FVector UDirectSeekBehaviour::CalculateSeekForce(const FWeakActorPtr& AffectedActor, const FWeakActorPtr& ChaseTarget, const float MaxSpeed) const
+FVector UDirectSeekBehaviour::CalculateSeekForce(const FAgentData& AgentData, const AActor* ChaseTarget, const float MaxSpeed) const
 {
-	if(!bIsEnabled) return FVector::ZeroVector;
-	if(!ChaseTarget.IsValid() || !AffectedActor.IsValid()) return FVector::ZeroVector;
-
-	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - AffectedActor->GetActorLocation();
+	if(!bIsEnabled || !ChaseTarget)
+	{
+		return FVector::ZeroVector;
+	}
+	
+	FVector DesiredVelocity = ChaseTarget->GetActorLocation() - AgentData.Location;
 	
 	DesiredVelocity.Normalize();
 	DesiredVelocity *= MaxSpeed;
 
-	const FVector& ChaseManeuver = DesiredVelocity - AffectedActor->GetVelocity();
+	const FVector& ChaseManeuver = DesiredVelocity - AgentData.Velocity;
 
-	if(bShouldDebug)
+	if(bDebug)
 	{
-		DrawDebugLine(GetWorld(), AffectedActor->GetActorLocation(), ChaseTarget->GetActorLocation(), FColor::Emerald, false, 0.01f, 0, 5.0f);
+		DrawDebugLine(AgentData.AffectedActor->GetWorld(), AgentData.Location, ChaseTarget->GetActorLocation(), DebugColor);
 	}
 	
 	return ChaseManeuver * Influence * InfluenceScale;

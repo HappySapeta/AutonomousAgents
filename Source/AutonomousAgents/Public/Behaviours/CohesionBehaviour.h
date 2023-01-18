@@ -17,6 +17,5 @@ class AUTONOMOUSAGENTS_API UCohesionBehaviour : public UBaseFlockingBehaviour, p
 	GENERATED_BODY()
 
 public:
-	virtual FVector CalculateSteerForce(const FWeakActorPtr& AffectedActor, const FActorArray* AllActors,
-	                                    const TArray<uint32>& NearbyAgentIndices, const float MaxSpeed) const override;
+	virtual FVector CalculateSteerForce(const FAgentData& AffectedAgentData, const FActorArray* OtherActors, const float MaxSpeed) const override;
 };

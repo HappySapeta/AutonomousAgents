@@ -20,10 +20,10 @@ class AUTONOMOUSAGENTS_API UBaseFlockingBehaviour : public UBaseAutonomousBehavi
 
 protected:
 
-	bool CanAgentAffect(const FWeakActorPtr& SelfAgent, const FWeakActorPtr& OtherAgent) const
+	bool CanOtherAgentAffect(const FAgentData& AffectedAgentData, const FWeakActorPtr& OtherAgent) const
 	{
 		return Utility::IsPointInFOV(
-			SelfAgent->GetActorLocation(), SelfAgent->GetActorForwardVector(), OtherAgent->GetActorLocation(),
+			AffectedAgentData.Location, AffectedAgentData.AffectedActor->GetActorForwardVector(), OtherAgent->GetActorLocation(),
 			SearchConfig.SearchRadius.GetLowerBoundValue(),
 			SearchConfig.SearchRadius.GetUpperBoundValue(),
 			SearchConfig.FOVHalfAngle);

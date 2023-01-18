@@ -5,6 +5,7 @@
 #include "Common/AgentSpawnerConfig.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
+#include "Subsystems/SimulationSubsystem.h"
 
 AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 {
@@ -18,6 +19,10 @@ void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 	{
 		SpatialGridSubsystem->Update();
 	}
+	if(SimulatorSubsystem)
+	{
+		SimulatorSubsystem->Simulate(DeltaSeconds);
+	}
 }
 
 void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig)
@@ -27,7 +32,7 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 
 	if(!SpatialGridSubsystem)
 	{
-		FetchGridSubsystem();
+		FetchSubsystems();
 	}
 	
 	FVector SpawnLocation = SpawnConfig->Origin - FVector(SpawnConfig->Span, SpawnConfig->Span, 0.0f);
@@ -64,18 +69,26 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 void AAgentsSandboxLevelScript::SpawnActor(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters) const
 {
 	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
-
-	if(SpatialGridSubsystem)
+	if(NewAgent)
 	{
-		SpatialGridSubsystem->RegisterActor(NewAgent);
+		if(SpatialGridSubsystem)
+		{
+			SpatialGridSubsystem->RegisterActor(NewAgent);
+		}
+
+		if(SimulatorSubsystem)
+		{
+			SimulatorSubsystem->AddAgent(NewAgent);
+		}
 	}
 }
 
-void AAgentsSandboxLevelScript::FetchGridSubsystem()
+void AAgentsSandboxLevelScript::FetchSubsystems()
 {
 	if(const UGameInstance* GameInstance = GetGameInstance())
 	{
-		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();	
+		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
+		SimulatorSubsystem = GameInstance->GetSubsystem<USimulationSubsystem>();
 	}
 }
 

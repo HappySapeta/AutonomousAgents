@@ -13,27 +13,23 @@ AAgentPawn::AAgentPawn()
 
 	USceneComponent* SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneComponent"));
 	SetRootComponent(SceneComponent);
-	
-	AutonomousMovement = CreateDefaultSubobject<UAutonomousMovementComponent>(TEXT("AutonomousMovementComponent"));
+}
+
+void AAgentPawn::SetIsChasing(bool Value)
+{
+	if(Value)
+	{
+		IsChasing();
+	}
+	else
+	{
+		IsFollowing();
+	}
 }
 
 void AAgentPawn::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// TODO : Delegate target finding task to AIController.
-	if(AutonomousMovement)
-	{
-		TArray<AActor*> ChaseTargets;
-		UGameplayStatics::GetAllActorsWithTag(GetWorld(), ChaseTargetTag, ChaseTargets);
-
-		if(ChaseTargets.Num() > 0)
-		{
-			const int RandomIndex = FMath::RandRange(0, ChaseTargets.Num() - 1);
-			AutonomousMovement->SetChaseTarget(ChaseTargets[RandomIndex]);
-		}
-	}
-
 	PreviousLocation = GetActorLocation();
 }
 
@@ -47,7 +43,7 @@ void AAgentPawn::Tick(float DeltaSeconds)
 
 void AAgentPawn::AlignActorToVelocity(float DeltaSeconds)
 {
-	const FVector& LookAtDirection = GetVelocity().GetSafeNormal();
+	const FVector& LookAtDirection = CurrentVelocity.GetSafeNormal();
 	const FRotator& TargetRotation = UKismetMathLibrary::MakeRotFromX(LookAtDirection);
 
 	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, VelocityAlignmentSpeed);
@@ -61,9 +57,4 @@ void AAgentPawn::CalculateCurrentVelocity(float DeltaSeconds)
 	
 	CurrentVelocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
 	PreviousLocation = CurrentLocation;
-}
-
-FVector AAgentPawn::GetVelocity() const
-{
-	return CurrentVelocity;
 }

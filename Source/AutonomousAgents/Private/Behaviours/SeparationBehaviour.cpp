@@ -1,21 +1,21 @@
 ﻿
 #include "Behaviours/SeparationBehaviour.h"
 
-FVector USeparationBehaviour::CalculateSteerForce(
-	const FWeakActorPtr& AffectedActor,
-	const FActorArray* AllActors, const TArray<uint32>& NearbyAgentIndices,
-	const float MaxSpeed) const
+FVector USeparationBehaviour::CalculateSteerForce(const FAgentData& AffectedAgentData, const FActorArray* OtherActors, const float MaxSpeed) const
 {
-	if(!bIsEnabled || !AffectedActor.IsValid()) return FVector::ZeroVector;
+	if(!bIsEnabled)
+	{
+		return FVector::ZeroVector;
+	}
 	
 	FVector SteeringInput = FVector::ZeroVector;
 	FVector AvoidanceVector = FVector::ZeroVector;
 	uint32 NumAvoidableAgents = 0;
 	
-	for(const uint32 Index : NearbyAgentIndices)
+	for(const uint32 Index : AffectedAgentData.NearbyAgentIndices)
 	{
-		const FWeakActorPtr& OtherAgent = AllActors->operator[](Index);
-		if(!OtherAgent.IsValid() || !CanAgentAffect(AffectedActor, OtherAgent))
+		const FWeakActorPtr& OtherAgent = OtherActors->operator[](Index);
+		if(!OtherAgent.IsValid() || !CanOtherAgentAffect(AffectedAgentData, OtherAgent))
 		{
 			continue;
 		}
@@ -24,15 +24,15 @@ FVector USeparationBehaviour::CalculateSteerForce(
 		
 		const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
 		
-		FVector OtherAgentVector = AffectedActor->GetActorLocation() - OtherAgentLocation;
+		FVector OtherAgentVector = AffectedAgentData.Location - OtherAgentLocation;
 		const float OtherAgentDistance = OtherAgentVector.Length();
 			
 		OtherAgentVector = OtherAgentVector.GetSafeNormal() / OtherAgentDistance;
 		AvoidanceVector += OtherAgentVector;
 			
-		if(bShouldDebug)
+		if(bDebug)
 		{
-			DrawDebugLine(GetWorld(), AffectedActor->GetActorLocation(), OtherAgentLocation, FColor::Red, false);
+			DrawDebugLine(AffectedAgentData.AffectedActor->GetWorld(), AffectedAgentData.Location, OtherAgent->GetActorLocation(), DebugColor);
 		}
 	}
 
@@ -41,7 +41,7 @@ FVector USeparationBehaviour::CalculateSteerForce(
 		AvoidanceVector /= NumAvoidableAgents;
 		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
 
-		const FVector& SeparationManeuver = AvoidanceVector - AffectedActor->GetVelocity();
+		const FVector& SeparationManeuver = AvoidanceVector - AffectedAgentData.Velocity;
 		SteeringInput = SeparationManeuver * Influence * InfluenceScale;
 	}
 	

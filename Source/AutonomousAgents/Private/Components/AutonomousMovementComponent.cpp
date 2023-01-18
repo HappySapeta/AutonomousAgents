@@ -63,7 +63,7 @@ void UAutonomousMovementComponent::InvokeBehaviours()
 			const ISeekingInterface* SeekingBehaviour = Cast<ISeekingInterface>(Behaviour->GetDefaultObject());
 			if(!SeekingBehaviour) continue;
 
-			MovementForce += SeekingBehaviour->CalculateSeekForce(GetOwner(), ChaseTarget, MaxSpeed);
+			//MovementForce += SeekingBehaviour->CalculateSeekForce(GetOwner(), ChaseTarget, MaxSpeed);
 		}
 	}
 	else
@@ -78,7 +78,7 @@ void UAutonomousMovementComponent::InvokeBehaviours()
 			const IFlockingInterface* FlockingBehaviour = Cast<IFlockingInterface>(Behaviour->GetDefaultObject());
 			if(!FlockingBehaviour) continue;
 
-			MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), GridSubsystem->GetActorArray(), NearbyAgentIndices, MaxSpeed);
+			//MovementForce += FlockingBehaviour->CalculateSteerForce(GetOwner(), GridSubsystem->GetActorArray(), NearbyAgentIndices, MaxSpeed);
 		}
 	}
 }

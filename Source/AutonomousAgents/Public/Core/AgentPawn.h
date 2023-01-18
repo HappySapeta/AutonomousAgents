@@ -29,8 +29,13 @@ public:
 	// Sets up components.
 	AAgentPawn();
 
-	// Returns the actor's current velocity.
-	virtual FVector GetVelocity() const override;
+	void SetIsChasing(bool Value);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void IsFollowing();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void IsChasing();
 	
 protected:
 
@@ -51,20 +56,10 @@ private:
 
 protected:
 
-	// Only actors with this tag are searched for chase targets.
-	UPROPERTY(EditAnywhere, Category = "Target")
-	FName ChaseTargetTag;
-
 	// Defines the speed at which the actor aligns with its velocity.
 	UPROPERTY(EditDefaultsOnly, Category = "Rotation", meta = (ClampMin = "0.0", ClampMax = "100.0", RangeMin = "0.0", RangeMax = "100.0"))
 	float VelocityAlignmentSpeed = 1.0f;
 
-protected:
-
-	// The Autonomous Movement Component provides autonomous steering behaviour to the actor.
-	UPROPERTY(EditDefaultsOnly, Category = "Movement", DuplicateTransient)
-	TObjectPtr<UAutonomousMovementComponent> AutonomousMovement;
-	
 private:
 
 	FVector CurrentVelocity = FVector::ZeroVector;

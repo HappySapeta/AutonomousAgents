@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 #include <UObject/Interface.h>
@@ -20,14 +19,10 @@ class UFlockingInterface : public UInterface
 class AUTONOMOUSAGENTS_API IFlockingInterface
 {
 	GENERATED_BODY()
-	
+
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-
-	virtual FVector CalculateSteerForce(
-		const FWeakActorPtr& AffectedActor,
-		const FActorArray* AllActors, const TArray<uint32>& NearbyAgentIndices,
-		const float MaxSpeed) const
+	virtual FVector CalculateSteerForce(const FAgentData& AgentData, const FActorArray* OtherActors, const float MaxSpeed) const
 	{
 		return FVector::ZeroVector;
 	}

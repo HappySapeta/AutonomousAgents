@@ -39,8 +39,11 @@ protected:
 	float Influence = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug")
-	bool bShouldDebug = false;
+	bool bDebug = false;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Debug", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
+	FColor DebugColor = FColor::Black;
+	
 protected:
 	
 	float InfluenceScale = 1.0f;
