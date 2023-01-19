@@ -36,7 +36,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void IsChasing();
-	
+
+	virtual FVector GetVelocity() const override;
+
 protected:
 
 	// Finds chase targets and initializes some variables.

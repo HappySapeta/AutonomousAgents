@@ -27,6 +27,11 @@ void AAgentPawn::SetIsChasing(bool Value)
 	}
 }
 
+FVector AAgentPawn::GetVelocity() const
+{
+	return CurrentVelocity;
+}
+
 void AAgentPawn::BeginPlay()
 {
 	Super::BeginPlay();
