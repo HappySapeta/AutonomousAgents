@@ -1,7 +1,9 @@
 ﻿
 #include "Behaviours/AlignmentBehaviour.h"
 
-FVector UAlignmentBehaviour::CalculateSteerForce(const FAgentData& AffectedAgentData, const FActorArray* OtherActors, const float MaxSpeed) const
+#include "Common/AgentData.h"
+
+FVector UAlignmentBehaviour::CalculateSteerForce(const FAgentData* AffectedAgentData, const TArray<const FAgentData*>* OtherActors, const float MaxSpeed) const
 {
 	if (!bIsEnabled)
 	{
@@ -12,21 +14,16 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const FAgentData& AffectedAgent
 	FVector AverageFlockVelocity = FVector::ZeroVector;
 	uint32 NumAlignmentAgents = 0;
 
-	for (const uint32 Index : AffectedAgentData.NearbyAgentIndices)
+	for (const uint32 Index : AffectedAgentData->NearbyAgentIndices)
 	{
-		const FWeakActorPtr& OtherAgent = OtherActors->operator[](Index);
-		if (!OtherAgent.IsValid() || !CanOtherAgentAffect(AffectedAgentData, OtherAgent))
+		const FAgentData* OtherAgent = OtherActors->operator[](Index);
+		if (!CanOtherAgentAffect(AffectedAgentData, OtherAgent))
 		{
 			continue;
 		}
 
 		++NumAlignmentAgents;
-		AverageFlockVelocity += OtherAgent->GetVelocity();
-
-		if (bDebug)
-		{
-			DrawDebugLine(AffectedAgentData.AffectedActor->GetWorld(), AffectedAgentData.Location, OtherAgent->GetActorLocation(), DebugColor);
-		}
+		AverageFlockVelocity += OtherAgent->Velocity;
 	}
 
 	if (NumAlignmentAgents > 0)
@@ -34,7 +31,7 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const FAgentData& AffectedAgent
 		AverageFlockVelocity /= NumAlignmentAgents;
 		AverageFlockVelocity = AverageFlockVelocity.GetSafeNormal() * MaxSpeed;
 
-		const FVector& AlignmentManeuver = AverageFlockVelocity - AffectedAgentData.Velocity;
+		const FVector& AlignmentManeuver = AverageFlockVelocity - AffectedAgentData->Velocity;
 		SteeringInput = AlignmentManeuver * Influence * InfluenceScale;
 	}
 

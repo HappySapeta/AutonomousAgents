@@ -1,10 +1,6 @@
 
 #include "Core/AgentPawn.h"
-#include "Components/AutonomousMovementComponent.h"
-
-#include <Kismet/GameplayStatics.h>
 #include <Kismet/KismetMathLibrary.h>
-#include <Components/SphereComponent.h>
 
 // Sets default values
 AAgentPawn::AAgentPawn()
@@ -15,21 +11,14 @@ AAgentPawn::AAgentPawn()
 	SetRootComponent(SceneComponent);
 }
 
-void AAgentPawn::SetIsChasing(bool Value)
-{
-	if(Value)
-	{
-		IsChasing();
-	}
-	else
-	{
-		IsFollowing();
-	}
-}
-
 FVector AAgentPawn::GetVelocity() const
 {
 	return CurrentVelocity;
+}
+
+void AAgentPawn::SetData(const FAgentData* Data)
+{
+	AgentData = Data;
 }
 
 void AAgentPawn::BeginPlay()
@@ -42,8 +31,13 @@ void AAgentPawn::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	CalculateCurrentVelocity(DeltaSeconds);
-	AlignActorToVelocity(DeltaSeconds);
+	//CalculateCurrentVelocity(DeltaSeconds);
+	if(AgentData)
+	{
+		CurrentVelocity = AgentData->Velocity;
+		SetActorLocation(AgentData->Location);
+		AlignActorToVelocity(DeltaSeconds);
+	}
 }
 
 void AAgentPawn::AlignActorToVelocity(float DeltaSeconds)

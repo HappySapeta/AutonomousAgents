@@ -1,8 +1,7 @@
 ﻿
 #include "Behaviours/CohesionBehaviour.h"
 
-FVector UCohesionBehaviour::CalculateSteerForce(const FAgentData& AffectedAgentData, const FActorArray* OtherActors,
-	const float MaxSpeed) const
+FVector UCohesionBehaviour::CalculateSteerForce(const FAgentData* AgentData, const TArray<const FAgentData*>* OtherActors, const float MaxSpeed) const
 {
 	if (!bIsEnabled)
 	{
@@ -13,29 +12,24 @@ FVector UCohesionBehaviour::CalculateSteerForce(const FAgentData& AffectedAgentD
 	FVector HerdLocation = FVector::ZeroVector;
 	uint32 NumCohesiveAgents = 0;
 
-	for (const uint32 Index : AffectedAgentData.NearbyAgentIndices)
+	for (const uint32 Index : AgentData->NearbyAgentIndices)
 	{
-		const FWeakActorPtr& OtherAgent = OtherActors->operator[](Index);
-		if (!OtherAgent.IsValid() || !CanOtherAgentAffect(AffectedAgentData, OtherAgent))
+		const FAgentData* OtherAgent = OtherActors->operator[](Index);
+		if (!CanOtherAgentAffect(AgentData, OtherAgent))
 		{
 			continue;
 		}
 
 		++NumCohesiveAgents;
-		const FVector& OtherAgentLocation = OtherAgent->GetActorLocation();
+		const FVector& OtherAgentLocation = OtherAgent->Location;
 		HerdLocation += OtherAgentLocation;
-
-		if (bDebug)
-		{
-			DrawDebugLine(AffectedAgentData.AffectedActor->GetWorld(), AffectedAgentData.Location, OtherAgent->GetActorLocation(), DebugColor);
-		}
 	}
 
 	if (NumCohesiveAgents > 0)
 	{
 		HerdLocation /= NumCohesiveAgents;
-		const FVector& DesiredVelocity = (HerdLocation - AffectedAgentData.Location).GetSafeNormal() * MaxSpeed;
-		const FVector& CohesionManeuver = DesiredVelocity - AffectedAgentData.Velocity;
+		const FVector& DesiredVelocity = (HerdLocation - AgentData->Location).GetSafeNormal() * MaxSpeed;
+		const FVector& CohesionManeuver = DesiredVelocity - AgentData->Velocity;
 		SteeringInput = CohesionManeuver * Influence * InfluenceScale;
 	}
 

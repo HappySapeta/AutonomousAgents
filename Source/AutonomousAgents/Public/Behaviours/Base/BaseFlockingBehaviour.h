@@ -5,6 +5,7 @@
 #include <UObject/Object.h>
 
 #include "BaseAutonomousBehaviour.h"
+#include "Common/AgentData.h"
 #include "Common/Utility.h"
 #include "Common/CommonTypes.h"
 #include "Common/FSearchParameters.h"
@@ -20,10 +21,10 @@ class AUTONOMOUSAGENTS_API UBaseFlockingBehaviour : public UBaseAutonomousBehavi
 
 protected:
 
-	bool CanOtherAgentAffect(const FAgentData& AffectedAgentData, const FWeakActorPtr& OtherAgent) const
+	bool CanOtherAgentAffect(const FAgentData* AffectedAgentData, const FAgentData* OtherAgent) const
 	{
 		return Utility::IsPointInFOV(
-			AffectedAgentData.Location, AffectedAgentData.AffectedActor->GetActorForwardVector(), OtherAgent->GetActorLocation(),
+			AffectedAgentData->Location, AffectedAgentData->GetForwardVector(), OtherAgent->Location,
 			SearchConfig.SearchRadius.GetLowerBoundValue(),
 			SearchConfig.SearchRadius.GetUpperBoundValue(),
 			SearchConfig.FOVHalfAngle);

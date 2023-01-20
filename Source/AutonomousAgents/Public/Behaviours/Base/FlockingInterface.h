@@ -2,14 +2,13 @@
 
 #include <CoreMinimal.h>
 #include <UObject/Interface.h>
-
-#include "Common/CommonTypes.h"
+#include "Common/AgentData.h"
 #include "FlockingInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(NotBlueprintable)
 class UFlockingInterface : public UInterface
-{
+{	
 	GENERATED_BODY()
 };
 
@@ -22,7 +21,7 @@ class AUTONOMOUSAGENTS_API IFlockingInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual FVector CalculateSteerForce(const FAgentData& AgentData, const FActorArray* OtherActors, const float MaxSpeed) const
+	virtual FVector CalculateSteerForce(const FAgentData* AgentData, const TArray<const FAgentData*>* OtherActors, const float MaxSpeed) const
 	{
 		return FVector::ZeroVector;
 	}

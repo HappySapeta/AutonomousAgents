@@ -3,7 +3,7 @@
 
 #include <CoreMinimal.h>
 #include <GameFramework/Pawn.h>
-
+#include "Common/AgentData.h"
 #include "AgentPawn.generated.h"
 
 // Forward declarations
@@ -28,16 +28,10 @@ public:
 
 	// Sets up components.
 	AAgentPawn();
-
-	void SetIsChasing(bool Value);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void IsFollowing();
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void IsChasing();
-
+	
 	virtual FVector GetVelocity() const override;
+
+	void SetData(const FAgentData* Data);
 
 protected:
 
@@ -64,6 +58,7 @@ protected:
 
 private:
 
+	const FAgentData* AgentData;
 	FVector CurrentVelocity = FVector::ZeroVector;
 	FVector PreviousLocation;
 };

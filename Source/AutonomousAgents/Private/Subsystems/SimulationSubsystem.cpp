@@ -7,7 +7,6 @@
 #include "Behaviours/Base/SeekingInterface.h"
 #include "Common/SimulationSettings.h"
 #include "Common/Utility.h"
-#include "Core/AgentPawn.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 
 void USimulationSubsystem::InitializeSimulator(USimulationSettings* SimulationConfiguration)
@@ -29,9 +28,10 @@ void USimulationSubsystem::InitializeSimulator(USimulationSettings* SimulationCo
 	}
 }
 
-void USimulationSubsystem::AddAgent(const TWeakObjectPtr<AActor>& AgentActor)
+FAgentData* USimulationSubsystem::AddAgent(const TWeakObjectPtr<AActor>& AgentActor)
 {
-	AgentsData.AddUnique(FAgentData(AgentActor));
+	const uint32 Index = AgentsData.AddUnique(new FAgentData(AgentActor));
+	return AgentsData[Index];
 }
 
 void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
@@ -41,11 +41,11 @@ void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
 
 void USimulationSubsystem::Simulate(float DeltaTime)
 {
-	for (FAgentData& Agent : AgentsData)
+	for (FAgentData* Agent : AgentsData)
 	{
-		SenseNearbyAgents(Agent);
-		ApplyBehaviourOnAgent(Agent);
-		UpdateAgentState(Agent, DeltaTime);
+		SenseNearbyAgents(*Agent);
+		ApplyBehaviourOnAgent(*Agent);
+		UpdateAgentState(*Agent, DeltaTime);
 	}
 }
 
@@ -59,10 +59,9 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(FAgentData& TargetAgent) const
 		{
 			if (const ISeekingInterface* SeekingInterface = Cast<ISeekingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,Configuration->AgentsMaxSpeed);
+				MovementForce += SeekingInterface->CalculateSeekForce(&TargetAgent, ChaseTarget,Configuration->AgentsMaxSpeed);
 			}
 		}
-		Cast<AAgentPawn>(TargetAgent.AffectedActor)->IsChasing();
 	}
 	else
 	{
@@ -70,10 +69,9 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(FAgentData& TargetAgent) const
 		{
 			if (const IFlockingInterface* FlockingInterface = Cast<IFlockingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, SpatialGrid->GetActorArray(), Configuration->AgentsMaxSpeed);
+				MovementForce += FlockingInterface->CalculateSteerForce(&TargetAgent, SpatialGrid->GetAgentsArray(), Configuration->AgentsMaxSpeed);
 			}
 		}
-		Cast<AAgentPawn>(TargetAgent.AffectedActor)->IsFollowing();
 	}
 	
 	TargetAgent.MovementForce = MovementForce;
@@ -86,7 +84,6 @@ void USimulationSubsystem::UpdateAgentState(FAgentData& TargetAgent, const float
 
 	TargetAgent.Velocity = NewVelocity;
 	TargetAgent.Location = NewLocation;
-	TargetAgent.AffectedActor->SetActorLocation(NewLocation);
 	TargetAgent.MovementForce = FVector::ZeroVector;
 }
 
@@ -109,14 +106,14 @@ bool USimulationSubsystem::CanAgentLead(const FAgentData& TargetAgent) const
 	const float LeadershipCheck_MaximumValue = Configuration->LeaderCheckParameters.SearchRadius.GetUpperBoundValue();
 	const float LeadershipCheck_MinimumValue = Configuration->LeaderCheckParameters.SearchRadius.GetLowerBoundValue();
 	const float HalfFOV = Configuration->LeaderCheckParameters.FOVHalfAngle;
-	const FActorArray* OtherActors = SpatialGrid->GetActorArray();
+	const TArray<const FAgentData*>* OtherAgents = SpatialGrid->GetAgentsArray();
 	
 	uint32 NumAgentsFound = 0;
 	for (const uint32 Index : TargetAgent.NearbyAgentIndices)
 	{
-		const FWeakActorPtr& OtherAgent = OtherActors->operator[](Index);
-		if (OtherAgent.IsValid() && Utility::IsPointInFOV(
-			TargetAgent.Location, TargetAgent.AffectedActor->GetActorForwardVector(), OtherAgent->GetActorLocation(),
+		const FAgentData* OtherAgent = OtherAgents->operator[](Index);
+		if (Utility::IsPointInFOV(
+			TargetAgent.Location, TargetAgent.GetForwardVector(), OtherAgent->Location,
 			LeadershipCheck_MinimumValue, LeadershipCheck_MaximumValue, HalfFOV))
 		{
 			++NumAgentsFound;

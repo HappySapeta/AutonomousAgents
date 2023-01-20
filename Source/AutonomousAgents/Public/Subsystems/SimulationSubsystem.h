@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Common/CommonTypes.h"
 #include "UObject/Object.h"
+#include "Common/AgentData.h"
 #include "SimulationSubsystem.generated.h"
 
 class USimulationSettings;
@@ -21,8 +21,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void InitializeSimulator(USimulationSettings* SimulationConfiguration);
-	
-	void AddAgent(const TWeakObjectPtr<AActor>& AgentActor);
+
+	FAgentData* AddAgent(const TWeakObjectPtr<AActor>& AgentActor);
 
 	UFUNCTION(BlueprintCallable)
 	void SetChaseTarget(AActor* NewChaseTarget);
@@ -50,5 +50,5 @@ private:
 	UPROPERTY(Transient)
 	USpatialGridSubsystem* SpatialGrid;
 	
-	TArray<FAgentData> AgentsData;
+	TArray<FAgentData*> AgentsData;
 };

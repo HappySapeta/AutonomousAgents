@@ -8,7 +8,7 @@ void USpatialGridSubsystem::InitializeGrid(const UGridParameters* Parameters)
 	GridParameters = Parameters;
 	
 	NumBlocks = GridParameters->Resolution; 
-	GridActors.Reserve(BLOCK_SIZE * BIT_ROW_LENGTH);
+	GridAgents.Reserve(BLOCK_SIZE * BIT_ROW_LENGTH);
 
 	RowBlocks.Init(FBitBlock(), NumBlocks);
 	ColumnBlocks.Init(FBitBlock(), NumBlocks);
@@ -24,26 +24,22 @@ void USpatialGridSubsystem::UpdateGrid()
 {
 	ResetBlocks();
 
-	for(int ActorIndex = 0; ActorIndex < GridActors.Num(); ++ActorIndex)
+	for(int AgentIndex = 0; AgentIndex < GridAgents.Num(); ++AgentIndex)
 	{
-		if(ActorIndex >= BLOCK_SIZE * BIT_ROW_LENGTH) break;
+		if(AgentIndex >= BLOCK_SIZE * BIT_ROW_LENGTH) break;
 
-		const FWeakActorPtr& Actor = GridActors[ActorIndex];
-		if(!Actor.IsValid())
-		{
-			continue;
-		}
+		const FAgentData* Agent = GridAgents[AgentIndex];
 		
 		// Find array indices
 		FGridCellLocation GridLocation;
-		if(!ConvertWorldToGridLocation(Actor->GetActorLocation(), GridLocation))
+		if(!ConvertWorldToGridLocation(Agent->Location, GridLocation))
 		{
 			continue;
 		}
 		
 		// Create AdditiveMask
-		const uint32 BlockLevel = ActorIndex / BIT_ROW_LENGTH;
-		const uint32 BitLocation = ActorIndex % BIT_ROW_LENGTH;
+		const uint32 BlockLevel = AgentIndex / BIT_ROW_LENGTH;
+		const uint32 BitLocation = AgentIndex % BIT_ROW_LENGTH;
 		const uint64 AdditiveMask = static_cast<uint64>(1) << BitLocation;
 
 		// Apply AdditiveMask
@@ -52,9 +48,9 @@ void USpatialGridSubsystem::UpdateGrid()
 	}
 }
 
-void USpatialGridSubsystem::RegisterActor(const FWeakActorPtr& Actor)
+void USpatialGridSubsystem::RegisterAgent(const FAgentData* NewAgentData)
 {
-	GridActors.AddUnique(Actor);
+	GridAgents.AddUnique(NewAgentData);
 }
 
 void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const
@@ -93,9 +89,9 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 	}
 }
 
-const FActorArray* USpatialGridSubsystem::GetActorArray() const
+const TArray<const FAgentData*>* USpatialGridSubsystem::GetAgentsArray() const
 {
-	return &GridActors;
+	return &GridAgents;
 }
 
 void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const

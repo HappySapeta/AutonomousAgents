@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Common/AgentData.h"
 #include "Common/CommonTypes.h"
 #include "Common/GridParameters.h"
 #include "Math/MathFwd.h"
@@ -71,11 +72,11 @@ public:
 	
 	void Update();
 
-	void RegisterActor(const FWeakActorPtr& Actor);
+	void RegisterAgent(const FAgentData* NewAgentData);
 	
 	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
 
-	const FActorArray* GetActorArray() const;
+	const TArray<const FAgentData*>* GetAgentsArray() const;
 
 public:
 	
@@ -103,7 +104,7 @@ private:
 
 	uint32 NumBlocks;
 	
-	FActorArray GridActors;
+	TArray<const FAgentData*> GridAgents;
 
 	UPROPERTY(Transient)
 	const UGridParameters* GridParameters;
