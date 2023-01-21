@@ -72,11 +72,11 @@ public:
 	
 	void Update();
 
-	void RegisterAgent(const FAgentData* NewAgentData);
+	void RegisterAgent(TWeakPtr<FAgentData> NewAgentData);
 	
 	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
 
-	const TArray<const FAgentData*>* GetAgentsArray() const;
+	const TArray<TWeakPtr<FAgentData>>* GetAllActors() const;
 
 public:
 	
@@ -104,7 +104,7 @@ private:
 
 	uint32 NumBlocks;
 	
-	TArray<const FAgentData*> GridAgents;
+	TArray<TWeakPtr<FAgentData>> GridAgents;
 
 	UPROPERTY(Transient)
 	const UGridParameters* GridParameters;

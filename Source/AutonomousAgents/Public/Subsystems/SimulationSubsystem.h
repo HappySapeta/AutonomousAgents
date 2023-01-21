@@ -22,7 +22,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitializeSimulator(USimulationSettings* SimulationConfiguration);
 
-	FAgentData* AddAgent(const TWeakObjectPtr<AActor>& AgentActor);
+	TWeakPtr<FAgentData> AddAgent(const TWeakObjectPtr<AActor>& AgentActor);
 
 	UFUNCTION(BlueprintCallable)
 	void SetChaseTarget(AActor* NewChaseTarget);
@@ -31,13 +31,13 @@ public:
 	
 private:
 
-	void ApplyBehaviourOnAgent(FAgentData& TargetAgent) const;
+	void ApplyBehaviourOnAgent(const TSharedPtr<FAgentData>& TargetAgent) const;
 
-	static void UpdateAgentState(FAgentData& TargetAgent, const float DeltaTime);
+	static void UpdateAgentState(const TSharedPtr<FAgentData>& TargetAgent, const float DeltaTime);
 
-	void SenseNearbyAgents(FAgentData& TargetAgent) const;
+	void SenseNearbyAgents(const TSharedPtr<FAgentData>& TargetAgent) const;
 
-	bool CanAgentLead(const FAgentData& TargetAgent) const;
+	bool CanAgentLead(const TSharedPtr<FAgentData>& TargetAgent) const;
 	
 private:
 
@@ -50,5 +50,6 @@ private:
 	UPROPERTY(Transient)
 	USpatialGridSubsystem* SpatialGrid;
 	
-	TArray<FAgentData*> AgentsData;
+	TArray<TSharedPtr<FAgentData>> AgentsData;
+	TArray<const FAgentData*> AgentData_Ptrs;
 };

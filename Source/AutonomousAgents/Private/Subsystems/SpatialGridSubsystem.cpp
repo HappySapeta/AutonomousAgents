@@ -1,6 +1,9 @@
 
 #include "Subsystems/SpatialGridSubsystem.h"
 
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+
 void USpatialGridSubsystem::InitializeGrid(const UGridParameters* Parameters)
 {
 	if(Parameters == nullptr) return;
@@ -28,11 +31,11 @@ void USpatialGridSubsystem::UpdateGrid()
 	{
 		if(AgentIndex >= BLOCK_SIZE * BIT_ROW_LENGTH) break;
 
-		const FAgentData* Agent = GridAgents[AgentIndex];
+		TWeakPtr<FAgentData>& Agent = GridAgents[AgentIndex];
 		
 		// Find array indices
 		FGridCellLocation GridLocation;
-		if(!ConvertWorldToGridLocation(Agent->Location, GridLocation))
+		if(!ConvertWorldToGridLocation(Agent.Pin()->Location, GridLocation))
 		{
 			continue;
 		}
@@ -48,7 +51,7 @@ void USpatialGridSubsystem::UpdateGrid()
 	}
 }
 
-void USpatialGridSubsystem::RegisterAgent(const FAgentData* NewAgentData)
+void USpatialGridSubsystem::RegisterAgent(TWeakPtr<FAgentData> NewAgentData)
 {
 	GridAgents.AddUnique(NewAgentData);
 }
@@ -89,7 +92,7 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 	}
 }
 
-const TArray<const FAgentData*>* USpatialGridSubsystem::GetAgentsArray() const
+const TArray<TWeakPtr<FAgentData>>* USpatialGridSubsystem::GetAllActors() const
 {
 	return &GridAgents;
 }

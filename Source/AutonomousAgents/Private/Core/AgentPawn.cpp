@@ -2,6 +2,9 @@
 #include "Core/AgentPawn.h"
 #include <Kismet/KismetMathLibrary.h>
 
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
+
 // Sets default values
 AAgentPawn::AAgentPawn()
 {
@@ -16,7 +19,7 @@ FVector AAgentPawn::GetVelocity() const
 	return CurrentVelocity;
 }
 
-void AAgentPawn::SetData(const FAgentData* Data)
+void AAgentPawn::SetData(const TWeakPtr<FAgentData>& Data)
 {
 	AgentData = Data;
 }
@@ -32,10 +35,10 @@ void AAgentPawn::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	//CalculateCurrentVelocity(DeltaSeconds);
-	if(AgentData)
+	if(AgentData.IsValid())
 	{
-		CurrentVelocity = AgentData->Velocity;
-		SetActorLocation(AgentData->Location);
+		CurrentVelocity = AgentData.Pin()->Velocity;
+		SetActorLocation(AgentData.Pin()->Location);
 		AlignActorToVelocity(DeltaSeconds);
 	}
 }

@@ -1,7 +1,7 @@
 ﻿
 #include "Behaviours/CohesionBehaviour.h"
 
-FVector UCohesionBehaviour::CalculateSteerForce(const FAgentData* AgentData, const TArray<const FAgentData*>* OtherActors, const float MaxSpeed) const
+FVector UCohesionBehaviour::CalculateSteerForce(const FAgentData* AgentData, const TArray<const FAgentData*>& OtherActors, const float MaxSpeed) const
 {
 	if (!bIsEnabled)
 	{
@@ -14,7 +14,7 @@ FVector UCohesionBehaviour::CalculateSteerForce(const FAgentData* AgentData, con
 
 	for (const uint32 Index : AgentData->NearbyAgentIndices)
 	{
-		const FAgentData* OtherAgent = OtherActors->operator[](Index);
+		const FAgentData* OtherAgent = OtherActors[Index];
 		if (!CanOtherAgentAffect(AgentData, OtherAgent))
 		{
 			continue;

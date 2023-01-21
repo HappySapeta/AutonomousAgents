@@ -31,7 +31,7 @@ public:
 	
 	virtual FVector GetVelocity() const override;
 
-	void SetData(const FAgentData* Data);
+	void SetData(const TWeakPtr<FAgentData>& Data);
 
 protected:
 
@@ -58,7 +58,7 @@ protected:
 
 private:
 
-	const FAgentData* AgentData;
+	TWeakPtr<FAgentData> AgentData;
 	FVector CurrentVelocity = FVector::ZeroVector;
 	FVector PreviousLocation;
 };
