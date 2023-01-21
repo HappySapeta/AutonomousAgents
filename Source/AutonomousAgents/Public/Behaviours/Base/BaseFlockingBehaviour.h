@@ -21,7 +21,7 @@ class AUTONOMOUSAGENTS_API UBaseFlockingBehaviour : public UBaseAutonomousBehavi
 
 protected:
 
-	bool CanOtherAgentAffect(const FAgentData* AffectedAgentData, const FAgentData* OtherAgent) const
+	bool CanOtherAgentAffect(const UAgentData* AffectedAgentData, const UAgentData* OtherAgent) const
 	{
 		return Utility::IsPointInFOV(
 			AffectedAgentData->Location, AffectedAgentData->GetForwardVector(), OtherAgent->Location,

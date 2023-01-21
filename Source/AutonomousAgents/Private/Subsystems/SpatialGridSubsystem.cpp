@@ -31,11 +31,11 @@ void USpatialGridSubsystem::UpdateGrid()
 	{
 		if(AgentIndex >= BLOCK_SIZE * BIT_ROW_LENGTH) break;
 
-		TWeakPtr<FAgentData>& Agent = GridAgents[AgentIndex];
+		const UAgentData* Agent = GridAgents[AgentIndex];
 		
 		// Find array indices
 		FGridCellLocation GridLocation;
-		if(!ConvertWorldToGridLocation(Agent.Pin()->Location, GridLocation))
+		if(!ConvertWorldToGridLocation(Agent->Location, GridLocation))
 		{
 			continue;
 		}
@@ -51,7 +51,7 @@ void USpatialGridSubsystem::UpdateGrid()
 	}
 }
 
-void USpatialGridSubsystem::RegisterAgent(TWeakPtr<FAgentData> NewAgentData)
+void USpatialGridSubsystem::RegisterAgent(const UAgentData* NewAgentData)
 {
 	GridAgents.AddUnique(NewAgentData);
 }
@@ -90,11 +90,6 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 		CurrentGridLocation.Y = StartGridLocation.Y;
 		CurrentGridLocation.X += 1;
 	}
-}
-
-const TArray<TWeakPtr<FAgentData>>* USpatialGridSubsystem::GetAllActors() const
-{
-	return &GridAgents;
 }
 
 void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const

@@ -71,9 +71,8 @@ void AAgentsSandboxLevelScript::SpawnActor(const UAgentSpawnerConfig* SpawnConfi
 	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
 	if(NewAgent)
 	{
-		TWeakPtr<FAgentData> AgentData = SimulatorSubsystem->AddAgent(NewAgent);
+		const UAgentData* AgentData = SimulatorSubsystem->AddAgent(NewAgent);
 		SpatialGridSubsystem->RegisterAgent(AgentData);
-		NewAgent->SetData(AgentData);
 	}
 }
 

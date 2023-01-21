@@ -17,6 +17,6 @@ class AUTONOMOUSAGENTS_API UDirectSeekBehaviour : public UBaseAutonomousBehaviou
 
 public:
 	
-	virtual FVector CalculateSeekForce(const FAgentData* AffectedAgentData, const AActor* ChaseTarget, const float MaxSpeed) const override;
+	virtual FVector CalculateSeekForce(const UAgentData* AffectedAgentData, const AActor* ChaseTarget, const float MaxSpeed) const override;
 	
 };

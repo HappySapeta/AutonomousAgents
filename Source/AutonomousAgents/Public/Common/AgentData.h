@@ -1,30 +1,57 @@
 ﻿#pragma once
+#include "Core/AgentPawn.h"
+#include "AgentData.generated.h"
 
-struct FAgentData
+UCLASS()
+class AUTONOMOUSAGENTS_API UAgentData : public UObject
 {
-	FAgentData(const TWeakObjectPtr<AActor>& Actor)
+	GENERATED_BODY()
+	
+public:
+
+	UAgentData() {}
+	
+	bool operator==(const UAgentData& Other) const
 	{
-		AffectedActor = Actor;
-		Velocity = AffectedActor->GetVelocity();
-		Location = AffectedActor->GetActorLocation();
+		return Other.AffectedAgentActor == this->AffectedAgentActor;
 	}
 
-	bool operator==(const FAgentData& Other) const
+	void SetAffectedActor(AAgentPawn* AgentActor)
 	{
-		return Other.AffectedActor == this->AffectedActor;
+		checkf(AgentActor, TEXT("AgentActor cannot be null."))
+		AffectedAgentActor = AgentActor;
+		Velocity = AffectedAgentActor->GetVelocity();
+		Location = AffectedAgentActor->GetActorLocation();
 	}
-
+	
 	FVector GetForwardVector() const
 	{
 		return Velocity.GetSafeNormal();
 	}
-	
-	FVector Location;
-	FVector Velocity;
-	FVector MovementForce = FVector::ZeroVector;
-	
-	TArray<uint32> NearbyAgentIndices;
 
+	void UpdateState(float DeltaTime)
+	{
+		const FVector& NewVelocity = Velocity + MovementForce * DeltaTime;
+		const FVector& NewLocation = Location + NewVelocity * DeltaTime;
+
+		Velocity = NewVelocity;
+		Location = NewLocation;
+		MovementForce = FVector::ZeroVector;
+
+		AffectedAgentActor->SetActorLocation(Location);
+		AffectedAgentActor->AlignActorToVelocity(Velocity, DeltaTime);
+	}
+	
+public:
+	
+	FVector Location = FVector::ZeroVector;
+	FVector Velocity = FVector::ZeroVector;
+	FVector MovementForce = FVector::ZeroVector;
+	TArray<uint32> NearbyAgentIndices;
+	
 private:
-	TWeakObjectPtr<AActor> AffectedActor;
+
+	UPROPERTY(Transient)
+	AAgentPawn* AffectedAgentActor;
+	
 };

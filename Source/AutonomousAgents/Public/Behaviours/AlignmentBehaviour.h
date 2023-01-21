@@ -17,5 +17,5 @@ class AUTONOMOUSAGENTS_API UAlignmentBehaviour : public UBaseFlockingBehaviour, 
 	GENERATED_BODY()
 
 public:
-	virtual FVector CalculateSteerForce(const FAgentData* AgentData, const TArray<const FAgentData*>& OtherAgents, const float MaxSpeed) const override;
+	virtual FVector CalculateSteerForce(const UAgentData* AgentData, const TArray<UAgentData*>& OtherAgents, const float MaxSpeed) const override;
 };

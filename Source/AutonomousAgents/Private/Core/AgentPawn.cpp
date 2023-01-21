@@ -2,61 +2,21 @@
 #include "Core/AgentPawn.h"
 #include <Kismet/KismetMathLibrary.h>
 
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-
 // Sets default values
 AAgentPawn::AAgentPawn()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	USceneComponent* SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneComponent"));
 	SetRootComponent(SceneComponent);
 }
 
-FVector AAgentPawn::GetVelocity() const
+void AAgentPawn::AlignActorToVelocity(const FVector& Velocity, float DeltaTime)
 {
-	return CurrentVelocity;
-}
-
-void AAgentPawn::SetData(const TWeakPtr<FAgentData>& Data)
-{
-	AgentData = Data;
-}
-
-void AAgentPawn::BeginPlay()
-{
-	Super::BeginPlay();
-	PreviousLocation = GetActorLocation();
-}
-
-void AAgentPawn::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	//CalculateCurrentVelocity(DeltaSeconds);
-	if(AgentData.IsValid())
-	{
-		CurrentVelocity = AgentData.Pin()->Velocity;
-		SetActorLocation(AgentData.Pin()->Location);
-		AlignActorToVelocity(DeltaSeconds);
-	}
-}
-
-void AAgentPawn::AlignActorToVelocity(float DeltaSeconds)
-{
-	const FVector& LookAtDirection = CurrentVelocity.GetSafeNormal();
+	const FVector& LookAtDirection = Velocity.GetSafeNormal();
 	const FRotator& TargetRotation = UKismetMathLibrary::MakeRotFromX(LookAtDirection);
-
-	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), TargetRotation, DeltaSeconds, VelocityAlignmentSpeed);
+	
+	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, VelocityAlignmentSpeed);
 	
 	SetActorRotation(DeltaRotation);
-}
-
-void AAgentPawn::CalculateCurrentVelocity(float DeltaSeconds)
-{
-	const FVector& CurrentLocation = GetActorLocation();
-	
-	CurrentVelocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
-	PreviousLocation = CurrentLocation;
 }

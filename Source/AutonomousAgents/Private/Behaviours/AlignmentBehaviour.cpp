@@ -3,7 +3,7 @@
 
 #include "Common/AgentData.h"
 
-FVector UAlignmentBehaviour::CalculateSteerForce(const FAgentData* AffectedAgentData, const TArray<const FAgentData*>& OtherAgents, const float MaxSpeed) const
+FVector UAlignmentBehaviour::CalculateSteerForce(const UAgentData* AffectedAgentData, const TArray<UAgentData*>& OtherAgents, const float MaxSpeed) const
 {
 	if (!bIsEnabled)
 	{
@@ -16,7 +16,7 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const FAgentData* AffectedAgent
 
 	for (const uint32 Index : AffectedAgentData->NearbyAgentIndices)
 	{
-		const FAgentData* OtherAgent = OtherAgents[Index];
+		const UAgentData* OtherAgent = OtherAgents[Index];
 		if (!CanOtherAgentAffect(AffectedAgentData, OtherAgent))
 		{
 			continue;

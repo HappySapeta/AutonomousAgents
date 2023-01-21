@@ -28,16 +28,11 @@ void USimulationSubsystem::InitializeSimulator(USimulationSettings* SimulationCo
 	}
 }
 
-TWeakPtr<FAgentData> USimulationSubsystem::AddAgent(const TWeakObjectPtr<AActor>& AgentActor)
+UAgentData* USimulationSubsystem::AddAgent(AAgentPawn* AgentPawn)
 {
-	const int32 Index = AgentsData.AddUnique(MakeShared<FAgentData>(AgentActor));
-	if(Index >= 0)
-	{
-		AgentData_Ptrs.Add(AgentsData.Last().Get());
-		return AgentsData[Index];
-	}
-
-	return nullptr;
+	const int32 Index = AgentsData.AddUnique(NewObject<UAgentData>());
+	AgentsData[Index]->SetAffectedActor(AgentPawn);
+	return AgentsData[Index];
 }
 
 void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
@@ -47,15 +42,15 @@ void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
 
 void USimulationSubsystem::Simulate(float DeltaTime)
 {
-	for (TSharedPtr<FAgentData>& Agent : AgentsData)
+	for (UAgentData* Agent : AgentsData)
 	{
 		SenseNearbyAgents(Agent);
 		ApplyBehaviourOnAgent(Agent);
-		UpdateAgentState(Agent, DeltaTime);
+		Agent->UpdateState(DeltaTime);
 	}
 }
 
-void USimulationSubsystem::ApplyBehaviourOnAgent(const TSharedPtr<FAgentData>& TargetAgent) const
+void USimulationSubsystem::ApplyBehaviourOnAgent(UAgentData* TargetAgent) const
 {
 	FVector MovementForce = FVector::ZeroVector;
 
@@ -65,7 +60,7 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const TSharedPtr<FAgentData>& T
 		{
 			if (const ISeekingInterface* SeekingInterface = Cast<ISeekingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent.Get(), ChaseTarget,Configuration->AgentsMaxSpeed);
+				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,Configuration->AgentsMaxSpeed);
 			}
 		}
 	}
@@ -75,7 +70,7 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const TSharedPtr<FAgentData>& T
 		{
 			if (const IFlockingInterface* FlockingInterface = Cast<IFlockingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent.Get(), AgentData_Ptrs, Configuration->AgentsMaxSpeed);
+				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, AgentsData, Configuration->AgentsMaxSpeed);
 			}
 		}
 	}
@@ -83,17 +78,7 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const TSharedPtr<FAgentData>& T
 	TargetAgent->MovementForce = MovementForce;
 }
 
-void USimulationSubsystem::UpdateAgentState(const TSharedPtr<FAgentData>& TargetAgent, const float DeltaTime)
-{
-	const FVector& NewVelocity = TargetAgent->Velocity + TargetAgent->MovementForce * DeltaTime;
-	const FVector& NewLocation = TargetAgent->Location + NewVelocity * DeltaTime;
-
-	TargetAgent->Velocity = NewVelocity;
-	TargetAgent->Location = NewLocation;
-	TargetAgent->MovementForce = FVector::ZeroVector;
-}
-
-void USimulationSubsystem::SenseNearbyAgents(const TSharedPtr<FAgentData>& TargetAgent) const
+void USimulationSubsystem::SenseNearbyAgents(UAgentData* TargetAgent) const
 {
 	TargetAgent->NearbyAgentIndices.Reset();
 	if (SpatialGrid)
@@ -102,7 +87,7 @@ void USimulationSubsystem::SenseNearbyAgents(const TSharedPtr<FAgentData>& Targe
 	}
 }
 
-bool USimulationSubsystem::CanAgentLead(const TSharedPtr<FAgentData>& TargetAgent) const
+bool USimulationSubsystem::CanAgentLead(const UAgentData* TargetAgent) const
 {
 	if (Configuration->bForceLeadership)
 	{
@@ -116,7 +101,7 @@ bool USimulationSubsystem::CanAgentLead(const TSharedPtr<FAgentData>& TargetAgen
 	uint32 NumAgentsFound = 0;
 	for (const uint32 Index : TargetAgent->NearbyAgentIndices)
 	{
-		const TSharedPtr<FAgentData>& OtherAgent = AgentsData[Index];
+		const UAgentData* OtherAgent = AgentsData[Index];
 		if (Utility::IsPointInFOV(
 			TargetAgent->Location, TargetAgent->GetForwardVector(), OtherAgent->Location,
 			LeadershipCheck_MinimumValue, LeadershipCheck_MaximumValue, HalfFOV))

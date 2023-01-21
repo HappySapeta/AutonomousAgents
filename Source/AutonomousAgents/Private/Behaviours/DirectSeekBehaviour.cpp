@@ -2,7 +2,7 @@
 #include "Behaviours/DirectSeekBehaviour.h"
 #include "Common/AgentData.h"
 
-FVector UDirectSeekBehaviour::CalculateSeekForce(const FAgentData* AffectedAgentData, const AActor* ChaseTarget, const float MaxSpeed) const
+FVector UDirectSeekBehaviour::CalculateSeekForce(const UAgentData* AffectedAgentData, const AActor* ChaseTarget, const float MaxSpeed) const
 {
 	if(!bIsEnabled || !ChaseTarget)
 	{

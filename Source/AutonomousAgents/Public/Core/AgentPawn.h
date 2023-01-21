@@ -3,7 +3,6 @@
 
 #include <CoreMinimal.h>
 #include <GameFramework/Pawn.h>
-#include "Common/AgentData.h"
 #include "AgentPawn.generated.h"
 
 // Forward declarations
@@ -29,37 +28,13 @@ public:
 	// Sets up components.
 	AAgentPawn();
 	
-	virtual FVector GetVelocity() const override;
-
-	void SetData(const TWeakPtr<FAgentData>& Data);
-
-protected:
-
-	// Finds chase targets and initializes some variables.
-	virtual void BeginPlay() override;
-
-	// 1. Calculate current velocity.
-	// 2. Align actor with velocity.
-	virtual void Tick(float DeltaSeconds) override;
-
-private:
-
 	// Rotates the actor to align the actor with its velocity. 
-	void AlignActorToVelocity(float DeltaSeconds);
-
-	// Calculate current velocity using time elapsed and previous location.
-	void CalculateCurrentVelocity(float DeltaSeconds);
+	void AlignActorToVelocity(const FVector& Velocity, float DeltaTime);
 
 protected:
 
 	// Defines the speed at which the actor aligns with its velocity.
 	UPROPERTY(EditDefaultsOnly, Category = "Rotation", meta = (ClampMin = "0.0", ClampMax = "100.0", RangeMin = "0.0", RangeMax = "100.0"))
 	float VelocityAlignmentSpeed = 1.0f;
-
-private:
-
-	TWeakPtr<FAgentData> AgentData;
-	FVector CurrentVelocity = FVector::ZeroVector;
-	FVector PreviousLocation;
 };
 
