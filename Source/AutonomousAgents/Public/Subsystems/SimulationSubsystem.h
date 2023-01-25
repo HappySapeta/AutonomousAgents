@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "Common/AgentData.h"
+#include "Common/SimulationRunnable.h"
 #include "SimulationSubsystem.generated.h"
 
 class USimulationSettings;
@@ -26,21 +27,27 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetChaseTarget(AActor* NewChaseTarget);
-
-	void Simulate(float DeltaTime);
 	
+	void StartSimulation();
+	
+	void Tick(float DeltaTime);
+
 private:
-
-	void ApplyBehaviourOnAgent(UAgentData* TargetAgent) const;
 	
-	void SenseNearbyAgents(UAgentData* TargetAgent) const;
+	void LaunchThreads();
+	
+	void ApplyBehaviourOnAgent(const uint32 Index) const;
+	
+	void SenseNearbyAgents(const uint32 Index) const;
+	
+	void UpdateState(const uint32 Index);
 
 	bool CanAgentLead(const UAgentData* TargetAgent) const;
 	
 private:
 
 	UPROPERTY(Transient)
-	USimulationSettings* Configuration;
+	USimulationSettings* SimulationSettings;
 	
 	UPROPERTY(Transient)
 	AActor* ChaseTarget;
@@ -50,4 +57,8 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<UAgentData*> AgentsData;
+
+private:
+	
+	TArray<TUniquePtr<FSimulationRunnable>> Runnables;
 };

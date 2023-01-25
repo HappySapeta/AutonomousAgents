@@ -34,6 +34,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
 
+	UFUNCTION(BlueprintCallable)
+	void StartSimulation();
+
 private:
 
 	void FetchSubsystems();

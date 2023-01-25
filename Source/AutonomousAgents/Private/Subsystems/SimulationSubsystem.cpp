@@ -13,16 +13,16 @@ void USimulationSubsystem::InitializeSimulator(USimulationSettings* SimulationCo
 {
 	checkf(SimulationConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
 	
-	Configuration = SimulationConfiguration;
+	SimulationSettings = SimulationConfiguration;
 	
 	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
 
-	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
+	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->ChaseBehaviors)
 	{
 		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
 	}
 
-	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->FlockBehaviors)
+	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->FlockBehaviors)
 	{
 		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
 	}
@@ -40,37 +40,67 @@ void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
 	ChaseTarget = NewChaseTarget;
 }
 
-void USimulationSubsystem::Simulate(float DeltaTime)
+void USimulationSubsystem::LaunchThreads()
 {
-	for (UAgentData* Agent : AgentsData)
+	int LowerLimit = 0;
+	const uint32 BucketSize = FMath::CeilToInt32(AgentsData.Num() / static_cast<float>(SimulationSettings->ThreadCount));
+	
+	for(uint32 ThreadIndex = 0; ThreadIndex < SimulationSettings->ThreadCount; ++ThreadIndex)
 	{
-		SenseNearbyAgents(Agent);
-		ApplyBehaviourOnAgent(Agent);
+		int UpperLimit = FMath::Min(AgentsData.Num() - 1, static_cast<int>(LowerLimit + BucketSize - 1));
+		const FString& ThreadName = "SimulationThread" + ThreadIndex;
+		FRunData Data(LowerLimit, LowerLimit + BucketSize - 1,
+		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::SenseNearbyAgents),
+		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::ApplyBehaviourOnAgent),
+		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::UpdateState),
+		              ThreadName);
+		
+		Runnables.Add(MakeUnique<FSimulationRunnable>(Data));
+
+		LowerLimit += BucketSize;
+	}
+}
+
+void USimulationSubsystem::StartSimulation()
+{
+	LaunchThreads();
+}
+
+void USimulationSubsystem::Tick(float DeltaTime)
+{
+	for(UAgentData* Agent : AgentsData)
+	{
 		Agent->UpdateState(DeltaTime);
 	}
 }
 
-void USimulationSubsystem::ApplyBehaviourOnAgent(UAgentData* TargetAgent) const
+void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 Index) const
 {
-	FVector MovementForce = FVector::ZeroVector;
+	if(!AgentsData.IsValidIndex(Index))
+	{
+		return;
+	}
 
+	UAgentData* TargetAgent = AgentsData[Index];
+	
+	FVector MovementForce = FVector::ZeroVector;
 	if(CanAgentLead(TargetAgent))
 	{
-		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
+		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->ChaseBehaviors)
 		{
 			if (const ISeekingInterface* SeekingInterface = Cast<ISeekingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,Configuration->AgentsMaxSpeed);
+				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,SimulationSettings->AgentsMaxSpeed);
 			}
 		}
 	}
 	else
 	{
-		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->FlockBehaviors)
+		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->FlockBehaviors)
 		{
 			if (const IFlockingInterface* FlockingInterface = Cast<IFlockingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, AgentsData, Configuration->AgentsMaxSpeed);
+				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, AgentsData, SimulationSettings->AgentsMaxSpeed);
 			}
 		}
 	}
@@ -78,25 +108,42 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(UAgentData* TargetAgent) const
 	TargetAgent->MovementForce = MovementForce;
 }
 
-void USimulationSubsystem::SenseNearbyAgents(UAgentData* TargetAgent) const
+void USimulationSubsystem::SenseNearbyAgents(const uint32 Index) const
 {
+	if(!AgentsData.IsValidIndex(Index))
+	{
+		return;
+	}
+
+	UAgentData* TargetAgent = AgentsData[Index];
 	TargetAgent->NearbyAgentIndices.Reset();
 	if (SpatialGrid)
 	{
-		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange,TargetAgent->NearbyAgentIndices);
+		SpatialGrid->SearchActors(TargetAgent->Location, SimulationSettings->AgentSenseRange,TargetAgent->NearbyAgentIndices);
 	}
+}
+
+void USimulationSubsystem::UpdateState(const uint32 Index)
+{
+	if(!AgentsData.IsValidIndex(Index))
+	{
+		return;
+	}
+
+	UAgentData* TargetAgent = AgentsData[Index];
+	TargetAgent->UpdateState(SimulationSettings->FixedDeltaTime);
 }
 
 bool USimulationSubsystem::CanAgentLead(const UAgentData* TargetAgent) const
 {
-	if (Configuration->bForceLeadership)
+	if (SimulationSettings->bForceLeadership)
 	{
 		return true;
 	}
 
-	const float LeadershipCheck_MaximumValue = Configuration->LeaderCheckParameters.SearchRadius.GetUpperBoundValue();
-	const float LeadershipCheck_MinimumValue = Configuration->LeaderCheckParameters.SearchRadius.GetLowerBoundValue();
-	const float HalfFOV = Configuration->LeaderCheckParameters.FOVHalfAngle;
+	const float LeadershipCheck_MaximumValue = SimulationSettings->LeaderCheckParameters.SearchRadius.GetUpperBoundValue();
+	const float LeadershipCheck_MinimumValue = SimulationSettings->LeaderCheckParameters.SearchRadius.GetLowerBoundValue();
+	const float HalfFOV = SimulationSettings->LeaderCheckParameters.FOVHalfAngle;
 	
 	uint32 NumAgentsFound = 0;
 	for (const uint32 Index : TargetAgent->NearbyAgentIndices)

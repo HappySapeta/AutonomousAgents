@@ -21,7 +21,7 @@ void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 	}
 	if(SimulatorSubsystem)
 	{
-		SimulatorSubsystem->Simulate(DeltaSeconds);
+		SimulatorSubsystem->Tick(DeltaSeconds);
 	}
 }
 
@@ -61,7 +61,6 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 	}
 
 	const FString Message = FString::Printf(TEXT("[AgentsSandboxLevelScript][SpawnActorsImmediately] %d Actors were spawned."), NumAgentsSpawned);
-	
 	UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Message);
 }
@@ -102,4 +101,13 @@ void AAgentsSandboxLevelScript::ResetBehaviourInfluence(TSubclassOf<UBaseAutonom
 		Behaviour->ResetInfluence();	
 	}
 }
+
+void AAgentsSandboxLevelScript::StartSimulation()
+{
+	if(SimulatorSubsystem)
+	{
+		SimulatorSubsystem->StartSimulation();
+	}
+}
+
 
