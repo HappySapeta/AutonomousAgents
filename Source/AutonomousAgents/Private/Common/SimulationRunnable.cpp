@@ -32,8 +32,8 @@ uint32 FSimulationRunnable::Run()
 	{
 		for(int Index = RunData.LowerLimit; Index <= RunData.UpperLimit; ++Index)
 		{
-			RunData.SenseNearbyAgents.Execute(Index);
-			RunData.ApplyBehaviourOnAgent.Execute(Index);
+			RunData.SenseNearbyAgents.ExecuteIfBound(Index);
+			RunData.ApplyBehaviourOnAgent.ExecuteIfBound(Index);
 		}
 	}
 	
