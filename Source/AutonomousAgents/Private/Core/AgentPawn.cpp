@@ -11,12 +11,12 @@ AAgentPawn::AAgentPawn()
 	SetRootComponent(SceneComponent);
 }
 
-void AAgentPawn::AlignActorToVelocity(const FVector& Velocity, float DeltaTime)
-{
-	const FVector& LookAtDirection = Velocity.GetSafeNormal();
-	const FRotator& TargetRotation = UKismetMathLibrary::MakeRotFromX(LookAtDirection);
-	
-	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, VelocityAlignmentSpeed);
-	
-	SetActorRotation(DeltaRotation);
-}
+//void AAgentPawn::AlignActorToVelocity(const FVector& Velocity, float DeltaTime)
+//{
+//	const FVector& LookAtDirection = Velocity.GetSafeNormal();
+//	const FRotator& TargetRotation = UKismetMathLibrary::MakeRotFromX(LookAtDirection);
+//	
+//	const FRotator& DeltaRotation = UKismetMathLibrary::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, VelocityAlignmentSpeed);
+//	
+//	SetActorRotation(DeltaRotation);
+//}

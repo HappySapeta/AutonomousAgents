@@ -29,7 +29,7 @@ public:
 	AAgentPawn();
 	
 	// Rotates the actor to align the actor with its velocity. 
-	void AlignActorToVelocity(const FVector& Velocity, float DeltaTime);
+	//void AlignActorToVelocity(const FVector& Velocity, float DeltaTime);
 
 protected:
 

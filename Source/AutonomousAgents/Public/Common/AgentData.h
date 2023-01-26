@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "Core/AgentPawn.h"
 #include "AgentData.generated.h"
 
 UCLASS()
@@ -10,19 +9,6 @@ class AUTONOMOUSAGENTS_API UAgentData : public UObject
 public:
 
 	UAgentData() {}
-	
-	bool operator==(const UAgentData& Other) const
-	{
-		return Other.AffectedAgentActor == this->AffectedAgentActor;
-	}
-
-	void SetAffectedActor(AAgentPawn* AgentActor)
-	{
-		checkf(AgentActor, TEXT("AgentActor cannot be null."))
-		AffectedAgentActor = AgentActor;
-		Velocity = AffectedAgentActor->GetVelocity();
-		Location = AffectedAgentActor->GetActorLocation();
-	}
 	
 	FVector GetForwardVector() const
 	{
@@ -37,9 +23,6 @@ public:
 		Velocity = NewVelocity;
 		Location = NewLocation;
 		MovementForce = FVector::ZeroVector;
-
-		AffectedAgentActor->SetActorLocation(Location);
-		AffectedAgentActor->AlignActorToVelocity(Velocity, DeltaTime);
 	}
 	
 public:
@@ -48,10 +31,5 @@ public:
 	FVector Velocity = FVector::ZeroVector;
 	FVector MovementForce = FVector::ZeroVector;
 	TArray<uint32> NearbyAgentIndices;
-	
-private:
-
-	UPROPERTY(Transient)
-	AAgentPawn* AffectedAgentActor;
 	
 };

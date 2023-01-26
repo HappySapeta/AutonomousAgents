@@ -6,8 +6,9 @@
 #include "AgentsSandboxLevelScript.generated.h"
 
 // Forward declarations
-class USimulationSubsystem;
+class UAgentData;
 class UAgentSpawnerConfig;
+class USimulationSubsystem;
 class USpatialGridSubsystem;
 class UBaseAutonomousBehaviour;
 
@@ -41,13 +42,27 @@ private:
 
 	void FetchSubsystems();
 	
-	void SpawnActor(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters) const;
+	void SpawnAgent(FVector SpawnLocation) const;
+
+protected:
 	
-private:
+	virtual void BeginPlay() override;
+
+protected:
 	
 	UPROPERTY(Transient)
 	TObjectPtr<USpatialGridSubsystem> SpatialGridSubsystem;
 
 	UPROPERTY(Transient)
 	TObjectPtr<USimulationSubsystem> SimulatorSubsystem;
+
+	UPROPERTY(EditDefaultsOnly)
+	FRotator OffsetRotation;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	UInstancedStaticMeshComponent* InstancedStaticMeshComponent;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	UStaticMesh* AgentMesh;
+	
 };

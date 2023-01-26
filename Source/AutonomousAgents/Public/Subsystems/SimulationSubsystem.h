@@ -23,24 +23,30 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void InitializeSimulator(USimulationSettings* SimulationConfiguration);
 
-	UAgentData* AddAgent(AAgentPawn* AgentPawn);
-
+	UAgentData* CreateAgent(const FVector& InitialLocation = FVector::ZeroVector, const FVector& InitialVelocity = FVector::ZeroVector);
+	
 	UFUNCTION(BlueprintCallable)
 	void SetChaseTarget(AActor* NewChaseTarget);
 	
 	void StartSimulation();
 	
-	void Tick(float DeltaTime);
+	int GetNumAgents() const;
+
+	void Update(float DeltaTime);
+	
+	FTransform GetTransform(uint32 Index, const FRotator& RotationOffset = FRotator::ZeroRotator) const;	
 
 private:
 	
 	void LaunchThreads();
-	
+
 	void ApplyBehaviourOnAgent(const uint32 Index) const;
 	
 	void SenseNearbyAgents(const uint32 Index) const;
 	
-	void UpdateState(const uint32 Index);
+	void UpdateAgent(uint32 Index, float DeltaTime);
+
+	void FixedUpdateAgent(const uint32 Index);
 
 	bool CanAgentLead(const UAgentData* TargetAgent) const;
 	

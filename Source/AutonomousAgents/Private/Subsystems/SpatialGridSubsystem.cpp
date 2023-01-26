@@ -1,9 +1,6 @@
 
 #include "Subsystems/SpatialGridSubsystem.h"
 
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-
 void USpatialGridSubsystem::InitializeGrid(const UGridParameters* Parameters)
 {
 	if(Parameters == nullptr) return;

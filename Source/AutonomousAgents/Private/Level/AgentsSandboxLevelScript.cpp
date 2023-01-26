@@ -5,11 +5,20 @@
 #include "Common/AgentSpawnerConfig.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Subsystems/SimulationSubsystem.h"
 
 AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	
+	//InstancedStaticMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedStaticMeshComponent"));
+	//SetRootComponent(InstancedStaticMeshComponent);
+	//InstancedStaticMeshComponent->SetStaticMesh(AgentMesh);
+	//InstancedStaticMeshComponent->SetMobility(EComponentMobility::Static);
+	//InstancedStaticMeshComponent->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	//InstancedStaticMeshComponent->SetGenerateOverlapEvents(false);
+	
 }
 
 void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
@@ -21,19 +30,33 @@ void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
 	}
 	if(SimulatorSubsystem)
 	{
-		SimulatorSubsystem->Tick(DeltaSeconds);
+		SimulatorSubsystem->Update(DeltaSeconds);
 	}
+
+	int AgentIndex = 0;
+	FTransform NewTransform = FTransform::Identity;
+	for(;AgentIndex < SimulatorSubsystem->GetNumAgents() - 1; ++AgentIndex)
+	{
+		InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, SimulatorSubsystem->GetTransform(AgentIndex, OffsetRotation), true);
+	}
+
+	InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, SimulatorSubsystem->GetTransform(AgentIndex, OffsetRotation), true, true);
 }
 
 void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig)
 {
-	if(SpawnConfig == nullptr) return;
-	if(SpawnConfig->AgentClass == nullptr) return;
-
-	if(!SpatialGridSubsystem)
+	if(SpawnConfig == nullptr)
 	{
-		FetchSubsystems();
+		return;
 	}
+	
+	FetchSubsystems();
+	
+	InstancedStaticMeshComponent = NewObject<UInstancedStaticMeshComponent>(this);
+	InstancedStaticMeshComponent->RegisterComponent();
+	InstancedStaticMeshComponent->SetStaticMesh(AgentMesh);
+	InstancedStaticMeshComponent->SetFlags(RF_Transactional);
+	AddInstanceComponent(InstancedStaticMeshComponent);
 	
 	FVector SpawnLocation = SpawnConfig->Origin - FVector(SpawnConfig->Span, SpawnConfig->Span, 0.0f);
 
@@ -51,7 +74,7 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 	{
 		while(SpawnLocation.Y >= LowerBound.Y && SpawnLocation.Y <= UpperBound.Y)
 		{
-			SpawnActor(SpawnConfig, SpawnLocation, SpawnParameters);
+			SpawnAgent(SpawnLocation);
 			++NumAgentsSpawned;
 			SpawnLocation.Y += SpawnConfig->Separation;
 		}
@@ -65,14 +88,17 @@ void AAgentsSandboxLevelScript::SpawnActorsImmediately(const UAgentSpawnerConfig
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Message);
 }
 
-void AAgentsSandboxLevelScript::SpawnActor(const UAgentSpawnerConfig* SpawnConfig, FVector SpawnLocation, FActorSpawnParameters SpawnParameters) const
+void AAgentsSandboxLevelScript::SpawnAgent(FVector SpawnLocation) const
 {
-	AAgentPawn* NewAgent = Cast<AAgentPawn>(GetWorld()->SpawnActor(SpawnConfig->AgentClass, &SpawnLocation, &FRotator::ZeroRotator, SpawnParameters));
-	if(NewAgent)
-	{
-		const UAgentData* AgentData = SimulatorSubsystem->AddAgent(NewAgent);
-		SpatialGridSubsystem->RegisterAgent(AgentData);
-	}
+	SpatialGridSubsystem->RegisterAgent(SimulatorSubsystem->CreateAgent(SpawnLocation));
+	
+	const FTransform& Transform = FTransform(OffsetRotation, SpawnLocation);
+	InstancedStaticMeshComponent->AddInstance(Transform);
+}
+
+void AAgentsSandboxLevelScript::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void AAgentsSandboxLevelScript::FetchSubsystems()
@@ -109,5 +135,3 @@ void AAgentsSandboxLevelScript::StartSimulation()
 		SimulatorSubsystem->StartSimulation();
 	}
 }
-
-
