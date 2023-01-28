@@ -2,7 +2,8 @@
 
 #include <CoreMinimal.h>
 #include <UObject/Interface.h>
-#include "Common/AgentData.h"
+
+#include "Core/Agent.h"
 #include "FlockingInterface.generated.h"
 
 // This class does not need to be modified.
@@ -21,7 +22,7 @@ class AUTONOMOUSAGENTS_API IFlockingInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual FVector CalculateSteerForce(const UAgentData* AgentData, const TArray<UAgentData*>& OtherAgents, const float MaxSpeed) const
+	virtual FVector CalculateSteerForce(const UAgent* AgentData, const TArray<UAgent*>& OtherAgents, const float MaxSpeed) const
 	{
 		return FVector::ZeroVector;
 	}

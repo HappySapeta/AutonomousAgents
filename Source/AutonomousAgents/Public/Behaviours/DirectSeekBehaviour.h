@@ -1,10 +1,10 @@
 ﻿
 #pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
+
 #include "Behaviours/Base/BaseFlockingBehaviour.h"
 #include "Behaviours/Base/SeekingInterface.h"
-#include "UObject/Object.h"
 #include "DirectSeekBehaviour.generated.h"
 
 /**
@@ -17,6 +17,6 @@ class AUTONOMOUSAGENTS_API UDirectSeekBehaviour : public UBaseAutonomousBehaviou
 
 public:
 	
-	virtual FVector CalculateSeekForce(const UAgentData* AffectedAgentData, const AActor* ChaseTarget, const float MaxSpeed) const override;
+	virtual FVector CalculateSeekForce(const UAgent* AffectedAgentData, const AActor* ChaseTarget, const float MaxSpeed) const override;
 	
 };

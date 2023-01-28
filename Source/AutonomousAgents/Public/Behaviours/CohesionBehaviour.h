@@ -2,7 +2,6 @@
 #pragma once
 
 #include <CoreMinimal.h>
-#include <UObject/Object.h>
 
 #include "Behaviours/Base/BaseFlockingBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
@@ -17,5 +16,5 @@ class AUTONOMOUSAGENTS_API UCohesionBehaviour : public UBaseFlockingBehaviour, p
 	GENERATED_BODY()
 
 public:
-	virtual FVector CalculateSteerForce(const UAgentData* AgentData, const TArray<UAgentData*>& OtherActors, const float MaxSpeed) const override;
+	virtual FVector CalculateSteerForce(const UAgent* AgentData, const TArray<UAgent*>& OtherActors, const float MaxSpeed) const override;
 };

@@ -1,23 +1,27 @@
 
 #include "Subsystems/SpatialGridSubsystem.h"
 
-void USpatialGridSubsystem::InitializeGrid(const UGridParameters* Parameters)
+void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfiguration)
 {
-	if(Parameters == nullptr) return;
+	if(NewConfiguration == nullptr) return;
 	
-	GridParameters = Parameters;
+	GridParameters = NewConfiguration;
 	
 	NumBlocks = GridParameters->Resolution; 
-	GridAgents.Reserve(BLOCK_SIZE * BIT_ROW_LENGTH);
+	GridAgents.Reserve(GBlockSize * GBitRowSize);
 
 	RowBlocks.Init(FBitBlock(), NumBlocks);
 	ColumnBlocks.Init(FBitBlock(), NumBlocks);
+
+	if(GridParameters->bDebug)
+	{
+		DrawGrid();
+	}
 }
 
 void USpatialGridSubsystem::Update()
 {
 	UpdateGrid();
-	DrawGrid();
 }
 
 void USpatialGridSubsystem::UpdateGrid()
@@ -26,9 +30,9 @@ void USpatialGridSubsystem::UpdateGrid()
 
 	for(int AgentIndex = 0; AgentIndex < GridAgents.Num(); ++AgentIndex)
 	{
-		if(AgentIndex >= BLOCK_SIZE * BIT_ROW_LENGTH) break;
+		if(AgentIndex >= GBlockSize * GBitRowSize) break;
 
-		const UAgentData* Agent = GridAgents[AgentIndex];
+		const UAgent* Agent = GridAgents[AgentIndex];
 		
 		// Find array indices
 		FGridCellLocation GridLocation;
@@ -38,8 +42,8 @@ void USpatialGridSubsystem::UpdateGrid()
 		}
 		
 		// Create AdditiveMask
-		const uint32 BlockLevel = AgentIndex / BIT_ROW_LENGTH;
-		const uint32 BitLocation = AgentIndex % BIT_ROW_LENGTH;
+		const uint32 BlockLevel = AgentIndex / GBitRowSize;
+		const uint32 BitLocation = AgentIndex % GBitRowSize;
 		const uint64 AdditiveMask = static_cast<uint64>(1) << BitLocation;
 
 		// Apply AdditiveMask
@@ -48,7 +52,7 @@ void USpatialGridSubsystem::UpdateGrid()
 	}
 }
 
-void USpatialGridSubsystem::RegisterAgent(const UAgentData* NewAgentData)
+void USpatialGridSubsystem::RegisterAgent(const UAgent* NewAgentData)
 {
 	GridAgents.AddUnique(NewAgentData);
 }
@@ -75,7 +79,7 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 		{
 			if(IsValidGridLocation(CurrentGridLocation))
 			{
-				DrawCell(CurrentGridLocation);
+				TryDrawCell(CurrentGridLocation);
 				
 				TArray<int> IndicesInThisCell;
 				GetIndicesInGridLocation(CurrentGridLocation, IndicesInThisCell);
@@ -94,16 +98,16 @@ void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& Gr
 	if(!IsValidGridLocation(GridLocation)) return;
 
 	Out_Indices.Reset();
-	for(uint32 BlockLevel = 0; BlockLevel < BLOCK_SIZE; ++BlockLevel)
+	for(uint32 BlockLevel = 0; BlockLevel < GBlockSize; ++BlockLevel)
 	{
 		const uint64 IndicesInThisBlock = RowBlocks[GridLocation.X][BlockLevel] & ColumnBlocks[GridLocation.Y][BlockLevel];
 
-		for(int BitLocation = 0; BitLocation < BIT_ROW_LENGTH; ++BitLocation)
+		for(int BitLocation = 0; BitLocation < GBitRowSize; ++BitLocation)
 		{
 			const uint64 FilteredBlock = IndicesInThisBlock & (static_cast<uint64>(1) << BitLocation);
 			if(FilteredBlock != 0)
 			{
-				Out_Indices.Add(BlockLevel * BLOCK_SIZE + BitLocation);
+				Out_Indices.Add(BlockLevel * GBlockSize + BitLocation);
 			}
 		}
 	}
@@ -165,7 +169,7 @@ void USpatialGridSubsystem::ResetBlocks()
 	
 	for(uint32 BlockIndex = 0; BlockIndex < NumBlocks; ++BlockIndex)
 	{
-		for(int BlockLevel = 0; BlockLevel < BLOCK_SIZE; ++BlockLevel)
+		for(int BlockLevel = 0; BlockLevel < GBlockSize; ++BlockLevel)
 		{
 			RowBlocks[BlockIndex][BlockLevel] = 0;
 			ColumnBlocks[BlockIndex][BlockLevel] = 0;
@@ -175,9 +179,6 @@ void USpatialGridSubsystem::ResetBlocks()
 
 void USpatialGridSubsystem::DrawGrid() const
 {
-	if(!GridParameters) return;
-	if(!GridParameters->bDebug) return;
-
 	const float CellWidth = GridParameters->Range.Size<float>() / GridParameters->Resolution;
 
 	float VariableCoordinate = GridParameters->Range.GetLowerBoundValue();
@@ -197,7 +198,7 @@ void USpatialGridSubsystem::DrawGrid() const
 	}
 }
 
-void USpatialGridSubsystem::DrawCell(const FGridCellLocation& GridLocation) const
+void USpatialGridSubsystem::TryDrawCell(const FGridCellLocation& GridLocation) const
 {
 	if(!GridParameters) return;
 	if(!GridParameters->bDrawDebugBox) return;

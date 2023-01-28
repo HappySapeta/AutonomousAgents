@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include <CoreMinimal.h>
-#include "GridParameters.generated.h"
+#include "GridConfiguration.generated.h"
 
 UCLASS(Blueprintable)
-class UGridParameters : public UDataAsset
+class UGridConfiguration : public UDataAsset
 {
 	GENERATED_BODY()
 

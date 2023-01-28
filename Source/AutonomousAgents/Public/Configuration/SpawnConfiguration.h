@@ -1,9 +1,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/DataAsset.h"
-#include "AgentSpawnerConfig.generated.h"
+#include <CoreMinimal.h>
+#include <Engine/DataAsset.h>
+
+#include "SpawnConfiguration.generated.h"
 
 // Forward declarations
 class AAgentPawn;
@@ -12,16 +13,11 @@ class AAgentPawn;
  * 
  */
 UCLASS(Blueprintable)
-class AUTONOMOUSAGENTS_API UAgentSpawnerConfig : public UDataAsset
+class AUTONOMOUSAGENTS_API USpawnConfiguration : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
-
-#if WITH_EDITORONLY_DATA
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn Settings")
-	bool bHideFromSceneOutliner = false;
-#endif
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn Settings")
 	FVector Origin = FVector::ZeroVector;

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <CoreMinimal.h>
-#include "FSearchParameters.generated.h"
+#include "SearchParameters.generated.h"
 
 USTRUCT(BlueprintType)
 struct FSearchParameters

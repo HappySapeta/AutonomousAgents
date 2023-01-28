@@ -1,126 +1,134 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Subsystems/SimulationSubsystem.h"
+#include "Subsystems/SpatialGridSubsystem.h"
+
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
 #include "Behaviours/Base/SeekingInterface.h"
-#include "Common/SimulationSettings.h"
+
 #include "Common/Utility.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Subsystems/SpatialGridSubsystem.h"
 
-void USimulationSubsystem::InitializeSimulator(USimulationSettings* SimulationConfiguration)
+#include "Configuration/SimulatorConfiguration.h"
+
+void USimulationSubsystem::ResetInfluences()
 {
-	checkf(SimulationConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
-	
-	SimulationSettings = SimulationConfiguration;
-	
-	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
-
-	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->ChaseBehaviors)
+	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
 	{
+		// CDO always serialize influence parameters, it is important to reset them before starting the simulation.
 		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
 	}
 
-	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->FlockBehaviors)
+	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->FlockBehaviors)
 	{
+		// CDO always serialize influence parameters, it is important to reset them before starting the simulation.
 		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
 	}
 }
 
-UAgentData* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
+void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 {
-	const int32 Index = AgentsData.AddUnique(NewObject<UAgentData>());
+	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
+	
+	Configuration = NewConfiguration;
+	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
+	
+	ResetInfluences();
+}
+
+void USimulationSubsystem::StartSimulation()
+{
+	checkf(Configuration != nullptr, TEXT("Simulation Configuration is null."));
+	StartSimulation_Internal();
+}
+
+UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
+{
+	const int32 Index = AgentsData.AddUnique(NewObject<UAgent>());
 	AgentsData[Index]->Location = InitialLocation;
 	AgentsData[Index]->Velocity = InitialVelocity;
 	return AgentsData[Index];
 }
 
+// TODO : Replace this with AddChaseTarget(AActor* NewChaseTarget) that puts multiple chase targets into an array.
 void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
 {
 	ChaseTarget = NewChaseTarget;
 }
 
-void USimulationSubsystem::LaunchThreads()
+void USimulationSubsystem::GetTransform(uint32 AgentIndex, FTransform& Out_Transform) const
+{
+	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(AgentsData[AgentIndex]->Velocity.GetSafeNormal());
+	const FVector& Location = AgentsData[AgentIndex]->Location;
+
+	Out_Transform.SetLocation(Location);
+	Out_Transform.SetRotation(Rotator.Quaternion());
+}
+
+// TODO : Implement an alternative solution so that updates sync well with threaded operations.
+void USimulationSubsystem::Tick(float DeltaSeconds) const
+{
+	checkf(Configuration != nullptr, TEXT("Simulation Configuration cannot be null."));
+	for(int AgentIndex = 0; AgentIndex < AgentsData.Num(); ++AgentIndex)
+	{
+		UpdateAgent(AgentIndex, DeltaSeconds);
+	}
+}
+
+void USimulationSubsystem::StartSimulation_Internal()
 {
 	int LowerLimit = 0;
-	const uint32 BucketSize = FMath::CeilToInt32(AgentsData.Num() / static_cast<float>(SimulationSettings->ThreadCount));
+	const uint32 BucketSize = FMath::CeilToInt32(AgentsData.Num() / static_cast<float>(Configuration->ThreadCount));
 	
-	for(uint32 ThreadIndex = 0; ThreadIndex < SimulationSettings->ThreadCount; ++ThreadIndex)
+	for(uint32 ThreadIndex = 0; ThreadIndex < Configuration->ThreadCount; ++ThreadIndex)
 	{
 		const int UpperLimit = FMath::Min(AgentsData.Num() - 1, static_cast<int>(LowerLimit + BucketSize - 1));
 		const FString& ThreadName = "SimulationThread" + ThreadIndex;
 		FRunData Data(LowerLimit, UpperLimit,
-		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::SenseNearbyAgents),
-		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::ApplyBehaviourOnAgent),
-		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::FixedUpdateAgent),
+		              FRunData::FRunnableCallback::CreateUObject(this, &USimulationSubsystem::SimulationLogic),
 		              ThreadName);
 
 		Runnables.Add(MakeUnique<FSimulationRunnable>(Data));
-		UE_LOG(LogTemp, Log, TEXT("Created New Thread : Bucket [%d, %d]"), LowerLimit, UpperLimit);
+		UE_LOG(LogTemp, Warning, TEXT("Created New Thread : Bucket [%d, %d]"), LowerLimit, UpperLimit);
 
 		LowerLimit += BucketSize;
 	}
 }
 
-void USimulationSubsystem::Update(float DeltaTime)
+void USimulationSubsystem::SimulationLogic(const uint32 AgentIndex) const
 {
-	for(int AgentIndex = 0; AgentIndex < AgentsData.Num(); ++AgentIndex)
-	{
-		UpdateAgent(AgentIndex, DeltaTime);
-	}
+	SenseNearbyAgents(AgentIndex);
+	ApplyBehaviourOnAgent(AgentIndex);
 }
 
-void USimulationSubsystem::StartSimulation()
+void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 {
-	LaunchThreads();
-}
-
-int USimulationSubsystem::GetNumAgents() const
-{
-	return AgentsData.Num();
-}
-
-FTransform USimulationSubsystem::GetTransform(uint32 Index, const FRotator& RotationOffset) const
-{
-	if(!AgentsData.IsValidIndex(Index))
-	{
-		return FTransform::Identity;
-	}
-
-	const FRotator& Rotator = RotationOffset + UKismetMathLibrary::MakeRotFromX(AgentsData[Index]->Velocity.GetSafeNormal());
-	const FVector& Location = AgentsData[Index]->Location;
-
-	return FTransform(Rotator, Location);
-}
-
-void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 Index) const
-{
-	if(!AgentsData.IsValidIndex(Index))
+	if(!AgentsData.IsValidIndex(AgentIndex))
 	{
 		return;
 	}
 
-	UAgentData* TargetAgent = AgentsData[Index];
+	UAgent* TargetAgent = AgentsData[AgentIndex];
 	
 	FVector MovementForce = FVector::ZeroVector;
-	if(CanAgentLead(TargetAgent))
+	if(ShouldAgentFlock(AgentIndex))
 	{
-		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->ChaseBehaviors)
+		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
 		{
 			if (const ISeekingInterface* SeekingInterface = Cast<ISeekingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,SimulationSettings->AgentsMaxSpeed);
+				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,Configuration->AgentsMaxSpeed);
 			}
 		}
 	}
 	else
 	{
-		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : SimulationSettings->FlockBehaviors)
+		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->FlockBehaviors)
 		{
 			if (const IFlockingInterface* FlockingInterface = Cast<IFlockingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, AgentsData, SimulationSettings->AgentsMaxSpeed);
+				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, AgentsData, Configuration->AgentsMaxSpeed);
 			}
 		}
 	}
@@ -128,52 +136,49 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 Index) const
 	TargetAgent->MovementForce = MovementForce;
 }
 
-void USimulationSubsystem::SenseNearbyAgents(const uint32 Index) const
+void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
 {
-	if(!AgentsData.IsValidIndex(Index))
+	if(!AgentsData.IsValidIndex(AgentIndex))
 	{
 		return;
 	}
 
-	UAgentData* TargetAgent = AgentsData[Index];
+	UAgent* TargetAgent = AgentsData[AgentIndex];
 	TargetAgent->NearbyAgentIndices.Reset();
 	if (SpatialGrid)
 	{
-		SpatialGrid->SearchActors(TargetAgent->Location, SimulationSettings->AgentSenseRange,TargetAgent->NearbyAgentIndices);
+		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange,TargetAgent->NearbyAgentIndices);
 	}
 }
 
-void USimulationSubsystem::UpdateAgent(const uint32 Index, const float DeltaTime)
+void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float DeltaSeconds) const
 {
-	if(!AgentsData.IsValidIndex(Index))
-	{
-		return;
-	}
-
-	UAgentData* TargetAgent = AgentsData[Index];
-	TargetAgent->UpdateState(DeltaTime);
+	UAgent* TargetAgent = AgentsData[AgentIndex];
+	TargetAgent->UpdateState(DeltaSeconds);
 }
 
-void USimulationSubsystem::FixedUpdateAgent(const uint32 Index)
+void USimulationSubsystem::FixedUpdateAgent(const uint32 AgentIndex) const
 {
-	UpdateAgent(Index, SimulationSettings->FixedDeltaTime);
+	UpdateAgent(AgentIndex, Configuration->FixedDeltaTime);
 }
 
-bool USimulationSubsystem::CanAgentLead(const UAgentData* TargetAgent) const
+bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 {
-	if (SimulationSettings->bForceLeadership)
+	if (Configuration->bForceLeadership)
 	{
 		return true;
 	}
 
-	const float LeadershipCheck_MaximumValue = SimulationSettings->LeaderCheckParameters.SearchRadius.GetUpperBoundValue();
-	const float LeadershipCheck_MinimumValue = SimulationSettings->LeaderCheckParameters.SearchRadius.GetLowerBoundValue();
-	const float HalfFOV = SimulationSettings->LeaderCheckParameters.FOVHalfAngle;
+	UAgent* TargetAgent = AgentsData[AgentIndex];
+
+	const float LeadershipCheck_MaximumValue = Configuration->LeaderCheckParameters.SearchRadius.GetUpperBoundValue();
+	const float LeadershipCheck_MinimumValue = Configuration->LeaderCheckParameters.SearchRadius.GetLowerBoundValue();
+	const float HalfFOV = Configuration->LeaderCheckParameters.FOVHalfAngle;
 	
 	uint32 NumAgentsFound = 0;
-	for (const uint32 Index : TargetAgent->NearbyAgentIndices)
+	for (const uint32 OtherAgentIndex : TargetAgent->NearbyAgentIndices)
 	{
-		const UAgentData* OtherAgent = AgentsData[Index];
+		const UAgent* OtherAgent = AgentsData[OtherAgentIndex];
 		if (Utility::IsPointInFOV(
 			TargetAgent->Location, TargetAgent->GetForwardVector(), OtherAgent->Location,
 			LeadershipCheck_MinimumValue, LeadershipCheck_MaximumValue, HalfFOV))
@@ -181,5 +186,7 @@ bool USimulationSubsystem::CanAgentLead(const UAgentData* TargetAgent) const
 			++NumAgentsFound;
 		}
 	}
+
+	// If this Agent cannot see any other agents in its view cone, it cannot flock other agents and should rather chase a target.
 	return NumAgentsFound == 0;
 }

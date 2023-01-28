@@ -2,13 +2,11 @@
 #pragma once
 
 #include <CoreMinimal.h>
-#include <UObject/Object.h>
 
 #include "BaseAutonomousBehaviour.h"
-#include "Common/AgentData.h"
+#include "Core/Agent.h"
 #include "Common/Utility.h"
-#include "Common/CommonTypes.h"
-#include "Common/FSearchParameters.h"
+#include "Configuration/SearchParameters.h"
 #include "BaseFlockingBehaviour.generated.h"
 
 /**
@@ -21,7 +19,7 @@ class AUTONOMOUSAGENTS_API UBaseFlockingBehaviour : public UBaseAutonomousBehavi
 
 protected:
 
-	bool CanOtherAgentAffect(const UAgentData* AffectedAgentData, const UAgentData* OtherAgent) const
+	bool CanOtherAgentAffect(const UAgent* AffectedAgentData, const UAgent* OtherAgent) const
 	{
 		return Utility::IsPointInFOV(
 			AffectedAgentData->Location, AffectedAgentData->GetForwardVector(), OtherAgent->Location,

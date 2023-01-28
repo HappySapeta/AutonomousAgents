@@ -1,7 +1,7 @@
 ﻿
 #include "Behaviours/SeparationBehaviour.h"
 
-FVector USeparationBehaviour::CalculateSteerForce(const UAgentData* AgentData, const TArray<UAgentData*>& OtherActors, const float MaxSpeed) const
+FVector USeparationBehaviour::CalculateSteerForce(const UAgent* AgentData, const TArray<UAgent*>& OtherActors, const float MaxSpeed) const
 {
 	if(!bIsEnabled)
 	{
@@ -14,7 +14,7 @@ FVector USeparationBehaviour::CalculateSteerForce(const UAgentData* AgentData, c
 	
 	for(const uint32 Index : AgentData->NearbyAgentIndices)
 	{
-		const UAgentData* OtherAgent = OtherActors[Index];
+		const UAgent* OtherAgent = OtherActors[Index];
 		if(!CanOtherAgentAffect(AgentData, OtherAgent))
 		{
 			continue;

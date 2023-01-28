@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "CoreMinimal.h"
+#include <CoreMinimal.h>
 #include "SimulationRunnable.generated.h"
 
-class UAgentData;
+class UAgent;
 class USimulationSubsystem;
 
 USTRUCT()
@@ -16,25 +16,19 @@ struct FRunData
 	FRunData() = default;
 	
 	FRunData(const int LowerLimit, const int UpperLimit,
-	         const FRunnableCallback& Function_SenseNearbyAgents,
-	         const FRunnableCallback& Function_ApplyBehaviourOnAgent,
-	         const FRunnableCallback& Function_UpdateAgentState,
+	         const FRunnableCallback& RunnableLogic,
 	         const FString ThreadName)
 	:
 	LowerLimit(LowerLimit),
 	UpperLimit(UpperLimit),
-	SenseNearbyAgents(Function_SenseNearbyAgents),
-	ApplyBehaviourOnAgent(Function_ApplyBehaviourOnAgent),
-	UpdateAgentState(Function_UpdateAgentState),
+	Logic(RunnableLogic),
 	Name(ThreadName)
 	{}
 
 	int LowerLimit = -1;
 	int UpperLimit = -1;
 
-	FRunnableCallback SenseNearbyAgents;
-	FRunnableCallback ApplyBehaviourOnAgent;
-	FRunnableCallback UpdateAgentState;
+	FRunnableCallback Logic;
 
 	FString Name;
 };

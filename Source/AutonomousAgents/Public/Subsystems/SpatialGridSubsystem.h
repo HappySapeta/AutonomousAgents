@@ -1,16 +1,16 @@
-
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Common/AgentData.h"
-#include "Common/CommonTypes.h"
-#include "Common/GridParameters.h"
-#include "Math/MathFwd.h"
+#include <CoreMinimal.h>
+#include <Math/MathFwd.h>
+
+#include "Core/Agent.h"
+#include "Configuration/GridConfiguration.h"
 #include "SpatialGridSubsystem.generated.h"
 
-#define BIT_ROW_LENGTH 64
-#define BLOCK_SIZE 20
+constexpr int GBitRowSize = 64;
+constexpr int GBlockSize = 20;
 
+// Represents a location on the grid in terms of Column and Row Indices.
 USTRUCT()
 struct FGridCellLocation
 {
@@ -24,10 +24,11 @@ struct FGridCellLocation
 		: X(XIndex), Y(YIndex)
 	{}
 	
-	int X;
-	int Y;
+	int X; // Row Index
+	int Y; // Column Index
 };
 
+// Wrapper over an Array of 64-bit Integers.
 USTRUCT()
 struct FBitBlock
 {
@@ -35,7 +36,7 @@ struct FBitBlock
 	
 	FBitBlock()
 	{
-		BitRow.Init(0, BLOCK_SIZE);
+		BitRow.Init(0, GBlockSize);
 	}
 
 	uint64& operator[](const uint32 Index)
@@ -48,39 +49,40 @@ struct FBitBlock
 		return BitRow[Index];
 	}
 
-	TArray<uint64, TInlineAllocator<BLOCK_SIZE>> BitRow;
+	TArray<uint64, TInlineAllocator<GBlockSize>> BitRow;
 };
 
-USTRUCT()
-struct FBlockArray
-{
-	GENERATED_BODY();
-	
-	TArray<FBitBlock> RowBlocks;
-	TArray<FBitBlock> ColumnBlocks;
-};
-
+/**
+ * The SpatialGridSubsystem implements an implicit spatial grid
+ * that keeps track of the location of entities
+ * and provides a fast lookup feature to find entities in a certain region.
+ */
 UCLASS()
 class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
-
+	
+	/**
+	 * @brief Reserves and initializes arrays with 0's.
+	 * @param NewConfiguration The configuration UDataAsset that the subsystem must use to get all its configuration information.
+	 */
 	UFUNCTION(BlueprintCallable)
-	void InitializeGrid(const UGridParameters* Parameters);
+	void InitializeGrid(const UGridConfiguration* NewConfiguration);
+
+public:
+
 	
 	void Update();
 
-	void RegisterAgent(const UAgentData* NewAgentData);
+	void RegisterAgent(const UAgent* NewAgentData);
 	
 	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
-
-public:
 	
 	void DrawGrid() const;
 	
-	void DrawCell(const FGridCellLocation& GridLocation) const;
+	void TryDrawCell(const FGridCellLocation& GridLocation) const;
 
 private:
 	
@@ -103,10 +105,10 @@ private:
 	uint32 NumBlocks;
 
 	UPROPERTY(Transient)
-	TArray<const UAgentData*> GridAgents;
+	TArray<const UAgent*> GridAgents;
 
 	UPROPERTY(Transient)
-	const UGridParameters* GridParameters;
+	const UGridConfiguration* GridParameters;
 
 	TArray<FBitBlock> RowBlocks;
 	TArray<FBitBlock> ColumnBlocks;

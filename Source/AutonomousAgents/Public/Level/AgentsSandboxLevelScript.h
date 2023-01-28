@@ -1,13 +1,14 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/LevelScriptActor.h"
+#include <CoreMinimal.h>
+#include <Engine/LevelScriptActor.h>
+
 #include "AgentsSandboxLevelScript.generated.h"
 
-// Forward declarations
-class UAgentData;
-class UAgentSpawnerConfig;
+// Forward declarations.
+class UAgent;
+class USpawnConfiguration;
 class USimulationSubsystem;
 class USpatialGridSubsystem;
 class UBaseAutonomousBehaviour;
@@ -22,12 +23,14 @@ class AUTONOMOUSAGENTS_API AAgentsSandboxLevelScript : public ALevelScriptActor
 	
 public:
 
-	AAgentsSandboxLevelScript();
-	
-	virtual void Tick(float DeltaSeconds) override;
+	UFUNCTION(BlueprintCallable)
+	void Init(const USpawnConfiguration* Configuration);
+
+	UFUNCTION(BlueprintCallable)
+	void SpawnAgents();
 	
 	UFUNCTION(BlueprintCallable)
-	void SpawnActorsImmediately(const UAgentSpawnerConfig* SpawnConfig);
+	void StartSimulation();
 
 	UFUNCTION(BlueprintCallable)
 	void ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour, float Scale);
@@ -35,34 +38,45 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour);
 
-	UFUNCTION(BlueprintCallable)
-	void StartSimulation();
+public:
 
+	AAgentsSandboxLevelScript();
+
+	virtual void Tick(float DeltaSeconds) override;
+	
 private:
 
 	void FetchSubsystems();
 	
-	void SpawnAgent(FVector SpawnLocation) const;
+	void SpawnSingleAgent(FVector SpawnLocation) const;
 
-protected:
+	void UpdateInstancedMeshes() const;
 	
-	virtual void BeginPlay() override;
+	void CreateInstancedStaticMeshComponent();
 
 protected:
 	
 	UPROPERTY(Transient)
-	TObjectPtr<USpatialGridSubsystem> SpatialGridSubsystem;
+	USpatialGridSubsystem* SpatialGridSubsystem;
 
 	UPROPERTY(Transient)
-	TObjectPtr<USimulationSubsystem> SimulatorSubsystem;
-
-	UPROPERTY(EditDefaultsOnly)
-	FRotator OffsetRotation;
+	USimulationSubsystem* SimulatorSubsystem;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	UPROPERTY(Transient)
 	UInstancedStaticMeshComponent* InstancedStaticMeshComponent;
+
+	UPROPERTY(Transient)
+	const USpawnConfiguration* SpawnConfiguration;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	UPROPERTY(EditDefaultsOnly, Category = "Visual Component")
 	UStaticMesh* AgentMesh;
-	
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual Component")
+	FRotator OffsetRotation;
+
+private:
+
+	mutable int NumAgents = 0;
+
+	bool bInitialized = false;
 };

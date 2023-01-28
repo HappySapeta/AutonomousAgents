@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "FSearchParameters.h"
-#include "UObject/Object.h"
-#include "SimulationSettings.generated.h"
+#include <CoreMinimal.h>
+#include "Configuration/SearchParameters.h"
+#include "SimulatorConfiguration.generated.h"
 
 class UBaseAutonomousBehaviour;
 
@@ -13,7 +12,7 @@ class UBaseAutonomousBehaviour;
  * 
  */
 UCLASS()
-class AUTONOMOUSAGENTS_API USimulationSettings : public UDataAsset
+class AUTONOMOUSAGENTS_API USimulatorConfiguration : public UDataAsset
 {
 	GENERATED_BODY()
 	

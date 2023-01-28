@@ -1,4 +1,4 @@
-﻿#include "Common/SimulationRunnable.h"
+﻿#include "Core/SimulationRunnable.h"
 
 FSimulationRunnable::FSimulationRunnable(const FRunData& Data)
 	:RunData(Data)
@@ -32,8 +32,12 @@ uint32 FSimulationRunnable::Run()
 	{
 		for(int Index = RunData.LowerLimit; Index <= RunData.UpperLimit; ++Index)
 		{
-			RunData.SenseNearbyAgents.ExecuteIfBound(Index);
-			RunData.ApplyBehaviourOnAgent.ExecuteIfBound(Index);
+			if(!RunData.Logic.IsBound())
+			{
+				return 0;
+			}
+
+			RunData.Logic.Execute(Index);
 		}
 	}
 	

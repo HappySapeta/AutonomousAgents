@@ -1,9 +1,9 @@
 ﻿
 #include "Behaviours/AlignmentBehaviour.h"
 
-#include "Common/AgentData.h"
+#include "Core/Agent.h"
 
-FVector UAlignmentBehaviour::CalculateSteerForce(const UAgentData* AffectedAgentData, const TArray<UAgentData*>& OtherAgents, const float MaxSpeed) const
+FVector UAlignmentBehaviour::CalculateSteerForce(const UAgent* AffectedAgentData, const TArray<UAgent*>& OtherAgents, const float MaxSpeed) const
 {
 	if (!bIsEnabled)
 	{
@@ -16,7 +16,7 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const UAgentData* AffectedAgent
 
 	for (const uint32 Index : AffectedAgentData->NearbyAgentIndices)
 	{
-		const UAgentData* OtherAgent = OtherAgents[Index];
+		const UAgent* OtherAgent = OtherAgents[Index];
 		if (!CanOtherAgentAffect(AffectedAgentData, OtherAgent))
 		{
 			continue;
