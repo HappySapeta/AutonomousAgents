@@ -18,9 +18,6 @@ class AUTONOMOUSAGENTS_API UAgentSpawnerConfig : public UDataAsset
 
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn Settings")
-	TSubclassOf<AAgentPawn> AgentClass;
-
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn Settings")
 	bool bHideFromSceneOutliner = false;

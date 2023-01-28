@@ -1,7 +1,5 @@
 
 #include "Level/AgentsSandboxLevelScript.h"
-
-#include "Core/AgentPawn.h"
 #include "Common/AgentSpawnerConfig.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
@@ -11,14 +9,6 @@
 AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
-	//InstancedStaticMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedStaticMeshComponent"));
-	//SetRootComponent(InstancedStaticMeshComponent);
-	//InstancedStaticMeshComponent->SetStaticMesh(AgentMesh);
-	//InstancedStaticMeshComponent->SetMobility(EComponentMobility::Static);
-	//InstancedStaticMeshComponent->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
-	//InstancedStaticMeshComponent->SetGenerateOverlapEvents(false);
-	
 }
 
 void AAgentsSandboxLevelScript::Tick(float DeltaSeconds)
