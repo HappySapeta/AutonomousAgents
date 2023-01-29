@@ -1,5 +1,7 @@
 ﻿#include "Core/Agent.h"
 
+#include "Kismet/KismetMathLibrary.h"
+
 #define RESERVATION_SIZE 100
 
 UAgent::UAgent()
@@ -9,15 +11,23 @@ UAgent::UAgent()
 
 FVector UAgent::GetForwardVector() const
 {
-	return Velocity.GetSafeNormal();
+	return ForwardVector;
 }
 
-void UAgent::UpdateState(float DeltaTime)
+void UAgent::UpdateState(const float DeltaSeconds)
 {
-	const FVector& NewVelocity = Velocity + MovementForce * DeltaTime;
-	const FVector& NewLocation = Location + NewVelocity * DeltaTime;
+	const FVector& NewVelocity = Velocity + MovementForce * DeltaSeconds;
+	const FVector& NewLocation = Location + NewVelocity * DeltaSeconds;
 
 	Velocity = NewVelocity;
 	Location = NewLocation;
 	MovementForce = FVector::ZeroVector;
+
+	AlignForwardWithVelocity(DeltaSeconds);
+}
+
+void UAgent::AlignForwardWithVelocity(const float DeltaSeconds)
+{
+	const FVector& TargetDirection = Velocity.GetSafeNormal();
+	ForwardVector = UKismetMathLibrary::VLerp(ForwardVector, TargetDirection, 0.5f).GetSafeNormal();
 }

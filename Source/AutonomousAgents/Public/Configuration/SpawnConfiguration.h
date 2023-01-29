@@ -30,6 +30,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	UStaticMesh* AgentMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	UMaterialInstance* Material;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	FRotator RotationOffset;

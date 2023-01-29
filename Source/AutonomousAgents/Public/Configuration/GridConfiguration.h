@@ -19,17 +19,17 @@ public:
 public:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings")
-	bool bDebug = false;
+	bool bDrawGrid = false;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebug", EditConditionHides = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDrawGrid", EditConditionHides = "true"))
 	FColor GridColor = FColor::Green;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings")
-	bool bDrawDebugBox = false;
+	bool bDebugLookup = false;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDrawDebugBox", EditConditionHides = "true"))
-	FColor DebugBoxColor = FColor::Red;
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebugLookup", EditConditionHides = "true"))
+	FColor LookupBoxColor = FColor::Red;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDrawDebugBox", EditConditionHides = "true"))
-	float DebugBoxSize = 10.0f;;
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebugLookup", EditConditionHides = "true"))
+	float LookupBoxSize = 10.0f;
 };

@@ -12,7 +12,9 @@
 
 #include "Configuration/SimulatorConfiguration.h"
 
-void USimulationSubsystem::ResetInfluences()
+// TODO: This is a temporary patch to a problem where we can't prevent CDOs from serializing certain variables.
+// This function shouldn't exist at all.
+void USimulationSubsystem::ResetInfluences() const
 {
 	for(TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
 	{

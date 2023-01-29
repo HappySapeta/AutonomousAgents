@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <CoreMinimal.h>
@@ -7,11 +6,8 @@
 #include "AgentsSandboxLevelScript.generated.h"
 
 // Forward declarations.
-class UAgent;
-class USpawnConfiguration;
 class USimulationSubsystem;
-class USpatialGridSubsystem;
-class UBaseAutonomousBehaviour;
+class USpatialGridSubsystem; 
 
 /**
  * 

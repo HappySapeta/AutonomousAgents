@@ -55,6 +55,7 @@ void AAgentsSandboxLevelScript::SpawnSingleAgent(FVector SpawnLocation) const
 	
 	const FTransform& Transform = FTransform(SpawnConfiguration->RotationOffset, SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
+	InstancedStaticMeshComponent->SetMaterial(NumAgents, SpawnConfiguration->Material);
 }
 
 void AAgentsSandboxLevelScript::SpawnAgents()

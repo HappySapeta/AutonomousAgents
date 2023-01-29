@@ -13,17 +13,24 @@ public:
 
 	// Returns the Agent's forward direction.
 	FVector GetForwardVector() const;
-
 	
 	/**
 	 * @brief Perform physics update (location and velocity) on a certain agent, using a variable delta-time.
-	 * @param DeltaTime Amount of time elapsed since the last update.
+	 * @param DeltaSeconds Amount of time elapsed since the last update.
 	 */
-	void UpdateState(float DeltaTime);
+	void UpdateState(const float DeltaSeconds);
 	
 	TArray<uint32> NearbyAgentIndices;
 	FVector Location = FVector::ZeroVector;
 	FVector Velocity = FVector::ZeroVector;
 	FVector MovementForce = FVector::ZeroVector;
+	FVector ForwardVector = FVector::ZeroVector;
+
+private:
 	
+	/**
+	 * @brief Interpolates the forward vector to align with the velocity direction.
+	 * @param DeltaSeconds Amount of time elapsed since the last update.
+	 */
+	void AlignForwardWithVelocity(const float DeltaSeconds);
 };

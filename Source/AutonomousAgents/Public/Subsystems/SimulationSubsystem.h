@@ -22,7 +22,10 @@ class AUTONOMOUSAGENTS_API USimulationSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	void ResetInfluences();
+	/**
+	 * @brief Resets the influence setting across all added behaviours.
+	 */
+	void ResetInfluences() const;
 	/**
 	 * @brief Initialize the simulator with a configuration asset.
 	 * 
