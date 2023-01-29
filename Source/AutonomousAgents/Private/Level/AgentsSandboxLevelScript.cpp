@@ -14,15 +14,15 @@ AAgentsSandboxLevelScript::AAgentsSandboxLevelScript()
 void AAgentsSandboxLevelScript::UpdateInstancedMeshes() const
 {
 	FTransform NewTransform;
-
+	
 	int AgentIndex = 0;
 	for(;AgentIndex < NumAgents - 1; ++AgentIndex)
 	{
-		SimulatorSubsystem->GetTransform(AgentIndex, NewTransform);
+		NewTransform = SimulatorSubsystem->GetTransform(AgentIndex, SpawnConfiguration->RotationOffset);
 		InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, NewTransform, true);
 	}
 
-	SimulatorSubsystem->GetTransform(AgentIndex, NewTransform);
+	NewTransform = SimulatorSubsystem->GetTransform(AgentIndex, SpawnConfiguration->RotationOffset);
 	InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, NewTransform, true, true);
 }
 
@@ -36,7 +36,7 @@ void AAgentsSandboxLevelScript::Init(const USpawnConfiguration* Configuration)
 
 	check(SpatialGridSubsystem);
 	check(SimulatorSubsystem);
-
+	
 	bInitialized = true;
 }
 
@@ -53,9 +53,8 @@ void AAgentsSandboxLevelScript::SpawnSingleAgent(FVector SpawnLocation) const
 {
 	SpatialGridSubsystem->RegisterAgent(SimulatorSubsystem->CreateAgent(SpawnLocation));
 	
-	const FTransform& Transform = FTransform(OffsetRotation, SpawnLocation);
+	const FTransform& Transform = FTransform(SpawnConfiguration->RotationOffset, SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
-	++NumAgents;
 }
 
 void AAgentsSandboxLevelScript::SpawnAgents()
@@ -92,7 +91,7 @@ void AAgentsSandboxLevelScript::CreateInstancedStaticMeshComponent()
 {
 	InstancedStaticMeshComponent = NewObject<UInstancedStaticMeshComponent>(this);
 	InstancedStaticMeshComponent->RegisterComponent();
-	InstancedStaticMeshComponent->SetStaticMesh(AgentMesh);
+	InstancedStaticMeshComponent->SetStaticMesh(SpawnConfiguration->AgentMesh);
 	InstancedStaticMeshComponent->SetFlags(RF_Transactional);
 	AddInstanceComponent(InstancedStaticMeshComponent);
 }

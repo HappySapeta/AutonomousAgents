@@ -67,12 +67,6 @@ protected:
 
 	UPROPERTY(Transient)
 	const USpawnConfiguration* SpawnConfiguration;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Visual Component")
-	UStaticMesh* AgentMesh;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Visual Component")
-	FRotator OffsetRotation;
 
 private:
 

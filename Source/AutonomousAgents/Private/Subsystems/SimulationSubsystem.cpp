@@ -45,10 +45,10 @@ void USimulationSubsystem::StartSimulation()
 
 UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
 {
-	const int32 Index = AgentsData.AddUnique(NewObject<UAgent>());
-	AgentsData[Index]->Location = InitialLocation;
-	AgentsData[Index]->Velocity = InitialVelocity;
-	return AgentsData[Index];
+	AgentsData.Add(NewObject<UAgent>());
+	AgentsData.Last()->Location = InitialLocation;
+	AgentsData.Last()->Velocity = InitialVelocity;
+	return AgentsData.Last();
 }
 
 // TODO : Replace this with AddChaseTarget(AActor* NewChaseTarget) that puts multiple chase targets into an array.
@@ -57,13 +57,13 @@ void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
 	ChaseTarget = NewChaseTarget;
 }
 
-void USimulationSubsystem::GetTransform(uint32 AgentIndex, FTransform& Out_Transform) const
+FTransform USimulationSubsystem::GetTransform(uint32 AgentIndex, const FRotator& RotationOffset) const
 {
 	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(AgentsData[AgentIndex]->Velocity.GetSafeNormal());
 	const FVector& Location = AgentsData[AgentIndex]->Location;
 
-	Out_Transform.SetLocation(Location);
-	Out_Transform.SetRotation(Rotator.Quaternion());
+	const FTransform& Transform = FTransform(Rotator + RotationOffset, Location);
+	return Transform;
 }
 
 // TODO : Implement an alternative solution so that updates sync well with threaded operations.

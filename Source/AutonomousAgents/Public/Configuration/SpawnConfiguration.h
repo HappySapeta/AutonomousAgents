@@ -27,5 +27,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn Settings")
 	float Separation = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	UStaticMesh* AgentMesh;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Visual")
+	FRotator RotationOffset;
 	
 };

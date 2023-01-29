@@ -56,22 +56,18 @@ public:
 	// TODO : Use a fixed update technique and get rid of the Tick.
 	/**
 	 * @brief Ticks the Simulator, useful for performing physics updates.
-	 *
 	 * SimulationSubsystem is not an actor and it does not tick itself. Its important to tick it manually.
-	 * 
 	 * @param DeltaSeconds Game time elapsed during last frame modified by the time dilation
 	 */
 	void Tick(float DeltaSeconds) const;
 
 	/**
 	 * @brief Returns the current Transform of an agent addressed by its Index.
-	 * 
 	 * The rotation of an Agent is calculated from its current velocity direction.
-	 * 
 	 * @param AgentIndex Unique integer that identifies an agent.
-	 * @param Out_Transform Agent's Transform Data
+	 * @param RotationOffset Optional Offset applied to the transform's rotation.
 	 */
-	void GetTransform(uint32 AgentIndex, FTransform& Out_Transform) const;	
+	FTransform GetTransform(uint32 AgentIndex, const FRotator& RotationOffset = FRotator::ZeroRotator) const;	
 
 private:
 
