@@ -1,6 +1,12 @@
 ﻿#pragma once
 #include "Agent.generated.h"
 
+/**
+ * UAgent represents an agent in the simulation space.
+ * It contains all information that is essential
+ * to determine its current physical state such as velocity,and location.
+ * All behavioural algorithms work upon instances of this class.
+ */
 UCLASS(NotBlueprintable)
 class AUTONOMOUSAGENTS_API UAgent : public UObject
 {
@@ -30,7 +36,6 @@ private:
 	
 	/**
 	 * @brief Interpolates the forward vector to align with the velocity direction.
-	 * @param DeltaSeconds Amount of time elapsed since the last update.
 	 */
-	void AlignForwardWithVelocity(const float DeltaSeconds);
+	void AlignForwardWithVelocity();
 };

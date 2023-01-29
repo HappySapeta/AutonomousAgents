@@ -2,11 +2,12 @@
 
 #include "Kismet/KismetMathLibrary.h"
 
-#define RESERVATION_SIZE 100
+constexpr uint32 GNearbyAgentsSize = 100;
+constexpr float GVelocityAlignmentSpeed = 0.5f; 
 
 UAgent::UAgent()
 {
-	NearbyAgentIndices.Reserve(RESERVATION_SIZE);
+	NearbyAgentIndices.Reserve(GNearbyAgentsSize);
 }
 
 FVector UAgent::GetForwardVector() const
@@ -23,11 +24,11 @@ void UAgent::UpdateState(const float DeltaSeconds)
 	Location = NewLocation;
 	MovementForce = FVector::ZeroVector;
 
-	AlignForwardWithVelocity(DeltaSeconds);
+	AlignForwardWithVelocity();
 }
 
-void UAgent::AlignForwardWithVelocity(const float DeltaSeconds)
+void UAgent::AlignForwardWithVelocity()
 {
 	const FVector& TargetDirection = Velocity.GetSafeNormal();
-	ForwardVector = UKismetMathLibrary::VLerp(ForwardVector, TargetDirection, 0.5f).GetSafeNormal();
+	ForwardVector = UKismetMathLibrary::VLerp(ForwardVector, TargetDirection, GVelocityAlignmentSpeed).GetSafeNormal();
 }
