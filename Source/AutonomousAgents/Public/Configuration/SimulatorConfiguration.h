@@ -23,6 +23,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Simulation Settings")
 	float FixedDeltaTime = 0.016f;
+		
+	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings")
+	FRotator RotationOffset;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings")
 	float AgentsMaxSpeed = 2000.0f;

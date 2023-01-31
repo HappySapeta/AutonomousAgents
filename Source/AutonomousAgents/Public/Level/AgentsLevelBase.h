@@ -69,6 +69,11 @@ public:
 	 * @param DeltaSeconds Game time elapsed during last frame modified by the time dilation
 	 */
 	virtual void Tick(float DeltaSeconds) override;
+
+	/**
+	* @brief Loops through the static mesh instances of all agents, and updates them with their latest Transform data.
+	*/
+	void UpdateInstancedMeshes() const;
 	
 private:
 	
@@ -84,11 +89,6 @@ private:
 	 * @param SpawnLocation The starting location of the new agent.
 	 */
 	void SpawnSingleAgent(FVector SpawnLocation) const;
-
-	/**
-	 * @brief Loops through the static mesh instances of all agents, and updates them with their latest Transform data.
-	 */
-	void UpdateInstancedMeshes() const;
 
 	/**
 	 * @brief Creates and registers a InstancedStaticMeshComponent.

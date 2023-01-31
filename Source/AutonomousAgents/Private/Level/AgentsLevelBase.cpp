@@ -59,26 +59,25 @@ void AAgentsLevelBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	SpatialGridSubsystem->Update();
 	SimulationSubsystem->Tick(DeltaSeconds);
+	SpatialGridSubsystem->Update();
 	UpdateInstancedMeshes();
 }
 
 void AAgentsLevelBase::UpdateInstancedMeshes() const
 {
-	FTransform NewTransform;
+	int32 AgentIndex = 0;
+	const FRotator& RotationOffset = SpawnConfiguration->RotationOffset;
+	
+	//for(;AgentIndex < NumAgents - 1; ++AgentIndex)
+	//{
+	//	InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, SimulationSubsystem->GetTransform(AgentIndex, RotationOffset), true, false);
+	//}
+//
+	//InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, SimulationSubsystem->GetTransform(AgentIndex, RotationOffset), true, true);
 
-	// Update all static mesh instances, and update the last one with the MarkRenderStateDirty flag set to true.
-	
-	int AgentIndex = 0;
-	for(;AgentIndex < NumAgents - 1; ++AgentIndex)
-	{
-		NewTransform = SimulationSubsystem->GetTransform(AgentIndex, SpawnConfiguration->RotationOffset);
-		InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, NewTransform, true);
-	}
-	
-	NewTransform = SimulationSubsystem->GetTransform(AgentIndex, SpawnConfiguration->RotationOffset);
-	InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, NewTransform, true, true);
+	InstancedStaticMeshComponent->BatchUpdateInstancesTransforms(0, SimulationSubsystem->GetTransforms(), true, false);
+	InstancedStaticMeshComponent->BatchUpdateInstancesTransform(NumAgents - 1, 1, SimulationSubsystem->GetTransform(NumAgents - 1), true, true);
 }
 
 void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation) const
@@ -119,7 +118,7 @@ void AAgentsLevelBase::ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehavi
 	UBaseAutonomousBehaviour* Behaviour = Cast<UBaseAutonomousBehaviour>(TargetBehaviour->GetDefaultObject());
 	if(Behaviour != nullptr)
 	{
-		Behaviour->ScaleInfluence(Scale);	
+		Behaviour->ScaleInfluence(Scale);
 	}
 }
 

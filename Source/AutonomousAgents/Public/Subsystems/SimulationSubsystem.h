@@ -8,6 +8,7 @@
 #include "Core/SimulationRunnable.h"
 #include "SimulationSubsystem.generated.h"
 
+class AAgentsLevelBase;
 // Forward declarations.
 class USimulatorConfiguration;
 class USpatialGridSubsystem;
@@ -21,7 +22,12 @@ class AUTONOMOUSAGENTS_API USimulationSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
+	DECLARE_DELEGATE_TwoParams(FOnAgentUpdatedEvent, uint32, const FTransform&);
+	
 public:
+
+	~USimulationSubsystem();
+	
 	/**
 	 * @brief Resets the influence setting across all added behaviours.
 	 */
@@ -36,7 +42,7 @@ public:
 	 * @param NewConfiguration The configuration UDataAsset that the simulator must use to get all its information from. 
 	 */
 	UFUNCTION(BlueprintCallable)
-	void Init(USimulatorConfiguration* NewConfiguration);
+	void Init(USimulatorConfiguration* NewConfiguration, AAgentsLevelBase* LevelActor);
 
 	/**
 	 * @brief Assigns a chase target.
@@ -55,14 +61,8 @@ public:
 
 	// Starts Worker Threads.
 	void StartSimulation();
-
-	// TODO : Use a fixed update technique and get rid of the Tick.
-	/**
-	 * @brief Ticks the Simulator, useful for performing physics updates.
-	 * SimulationSubsystem is not an actor and it does not tick itself. Its important to tick it manually.
-	 * @param DeltaSeconds Game time elapsed during last frame modified by the time dilation
-	 */
-	void Tick(float DeltaSeconds) const;
+	
+	void Tick(float DeltaTime);
 
 	/**
 	 * @brief Returns the current Transform of an agent addressed by its Index.
@@ -70,19 +70,29 @@ public:
 	 * @param AgentIndex Unique integer that identifies an agent.
 	 * @param RotationOffset Optional Offset applied to the transform's rotation.
 	 */
-	FTransform GetTransform(uint32 AgentIndex, const FRotator& RotationOffset = FRotator::ZeroRotator) const;	
+	FTransform GetTransform(const uint32 AgentIndex) const;
+	
+	const TArray<FTransform>& USimulationSubsystem::GetTransforms() const;
+	
+	virtual void BeginDestroy() override;
 
 private:
 
 	// Internal call to create and launch threads.
-	virtual void StartSimulation_Internal();
+	virtual void LaunchThreads();
+
+	void UpdateTransform(uint32 AgentIndex);
+	
+	void LaunchAsyncOperations();
+	
+	void RunAsyncLogic(const uint32 LowerLimit, const uint32 UpperLimit) const;
 
 	/**
 	 * @brief Runs behaviours and sense updates on an Agent.
 	 * Designed to simply the multi-threaded operations.
 	 * @param AgentIndex Unique integer that identifies an agent.
 	 */
-	void SimulationLogic(uint32 AgentIndex) const;
+	void RunSimulationLogicOnSingleAgent(const uint32 AgentIndex) const;
 
 	/**
 	 * @brief Applies behavioural logic on a certain agent identified by its index.
@@ -102,13 +112,13 @@ private:
 	 * @param AgentIndex Unique integer that identifies an agent.
 	 * @param DeltaSeconds Game time elapsed during last frame modified by the time dilation
 	 */
-	virtual void UpdateAgent(uint32 AgentIndex, float DeltaSeconds) const;
+	virtual void UpdateAgent(uint32 AgentIndex, float DeltaSeconds);
 
 	/**
 	 * @brief Perform physics update (location and velocity) on a certain agent, using a variable fixed delta-time.
 	 * @param AgentIndex Unique integer that identifies an agent.
 	 */
-	virtual void FixedUpdateAgent(const uint32 AgentIndex) const;
+	virtual void FixedUpdateAgent(const uint32 AgentIndex);
 
 	/**
 	 * @brief Checks all nearby agents and uses a view cone filter
@@ -118,6 +128,11 @@ private:
 	 * @return 
 	 */
 	virtual bool ShouldAgentFlock(const uint32 AgentIndex) const;
+
+
+public:
+
+	FOnAgentUpdatedEvent OnAgentUpdatedEvent;
 	
 private:
 	
@@ -144,4 +159,12 @@ private:
 
 	// Thread objects that break the simulation logic into pieces and run them independently.
 	TArray<TUniquePtr<FSimulationRunnable>> Runnables;
+
+	TArray<TFuture<void>> AsyncResults;
+	bool bStopRequested = false;
+
+	UPROPERTY(Transient)
+	AAgentsLevelBase* AgentsLevelBase = nullptr;
+
+	TArray<FTransform> AgentTransforms;
 };

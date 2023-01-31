@@ -1,6 +1,11 @@
 
 #include "Subsystems/SpatialGridSubsystem.h"
 
+USpatialGridSubsystem::~USpatialGridSubsystem()
+{
+	UE_LOG(LogTemp, Warning, TEXT("SpatialGrid Subsystem : Destructor"));
+}
+
 void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration, TEXT("NewConfiguration cannot be null."));
@@ -92,6 +97,9 @@ void USpatialGridSubsystem::UpdateGrid()
 		const uint32 BitLocation = AgentIndex % GBitRowSize;
 		const uint64 AdditiveMask = static_cast<uint64>(1) << BitLocation;
 
+		//const int NewIndex = BlockLevel * GBlockSize + BitLocation;
+		//check(NewIndex < GridAgents.Num());
+		
 		// Apply AdditiveMask
 		RowBlocks[GridLocation.X][BlockLevel] |= AdditiveMask;
 		ColumnBlocks[GridLocation.Y][BlockLevel] |= AdditiveMask;
@@ -115,7 +123,7 @@ void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& Gr
 			const uint64 FilteredBlock = IndicesInThisBlock & (static_cast<uint64>(1) << BitLocation);
 			if(FilteredBlock != 0)
 			{
-				Out_Indices.Add(BlockLevel * GBlockSize + BitLocation);
+				Out_Indices.Add(BlockLevel * GBitRowSize + BitLocation);
 			}
 		}
 	}

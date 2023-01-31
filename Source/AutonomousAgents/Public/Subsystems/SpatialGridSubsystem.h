@@ -12,7 +12,7 @@ constexpr int GBitRowSize = 64;
 
 // Number of integers in a BitBlock. Use a larger number to support more agents.
 // E.g : with GBitRowSize of 64, and GBlockSize of 20 the spatial grid can only handle 64 * 20 that is 1280 agents.
-constexpr int GBlockSize = 20;
+constexpr int GBlockSize = 100;
 
 // Represents a location on the grid in terms of Column and Row Indices.
 USTRUCT()
@@ -70,6 +70,10 @@ UCLASS()
 class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
+
+public:
+	
+	~USpatialGridSubsystem();
 
 public:
 	
