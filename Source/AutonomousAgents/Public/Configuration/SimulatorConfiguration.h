@@ -26,6 +26,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings")
 	float AgentSenseRange = 300.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings", meta = (UIMin = "0.001", UIMax = "1.0", ClampMin = "0.001", ClampMax = "1.0"))
+	float VelocityAlignmentSpeed = 0.1f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Leader Check Settings")
 	bool bForceLeadership = false;

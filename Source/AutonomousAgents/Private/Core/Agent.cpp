@@ -3,7 +3,6 @@
 #include "Kismet/KismetMathLibrary.h"
 
 constexpr uint32 GNearbyAgentsSize = 100;
-constexpr float GVelocityAlignmentSpeed = 0.5f; 
 
 UAgent::UAgent()
 {
@@ -27,8 +26,13 @@ void UAgent::UpdateState(const float DeltaSeconds)
 	AlignForwardWithVelocity();
 }
 
+void UAgent::SetVelocityAlignmentSpeed(const float Speed)
+{
+	VelocityAlignmentSpeed = FMath::Clamp(Speed, 0.001f, 1.0f);
+}
+
 void UAgent::AlignForwardWithVelocity()
 {
 	const FVector& TargetDirection = Velocity.GetSafeNormal();
-	ForwardVector = UKismetMathLibrary::VLerp(ForwardVector, TargetDirection, GVelocityAlignmentSpeed).GetSafeNormal();
+	ForwardVector = UKismetMathLibrary::VLerp(ForwardVector, TargetDirection, VelocityAlignmentSpeed).GetSafeNormal();
 }

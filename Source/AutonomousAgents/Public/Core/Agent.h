@@ -25,17 +25,26 @@ public:
 	 * @param DeltaSeconds Amount of time elapsed since the last update.
 	 */
 	void UpdateState(const float DeltaSeconds);
+
+	void SetVelocityAlignmentSpeed(const float Speed);
+
+public:
 	
 	TArray<uint32> NearbyAgentIndices;
 	FVector Location = FVector::ZeroVector;
 	FVector Velocity = FVector::ZeroVector;
 	FVector MovementForce = FVector::ZeroVector;
 	FVector ForwardVector = FVector::ZeroVector;
-
+	
 private:
 	
 	/**
 	 * @brief Interpolates the forward vector to align with the velocity direction.
 	 */
 	void AlignForwardWithVelocity();
+
+private:
+
+	float VelocityAlignmentSpeed = 0.1f;
+	
 };

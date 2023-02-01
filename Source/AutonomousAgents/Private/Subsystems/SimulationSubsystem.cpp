@@ -55,13 +55,16 @@ void USimulationSubsystem::Tick(const float DeltaTime)
 
 UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
 {
-	AgentsData.Add(NewObject<UAgent>());
 	AgentTransforms.Add(FTransform::Identity);
-	
-	AgentsData.Last()->Location = InitialLocation;
-	AgentsData.Last()->Velocity = InitialVelocity;
 
-	return AgentsData.Last();
+	UAgent* NewAgent = NewObject<UAgent>();
+	AgentsData.Add(NewAgent);
+	
+	NewAgent->Location = InitialLocation;
+	NewAgent->Velocity = InitialVelocity;
+	NewAgent->SetVelocityAlignmentSpeed(Configuration->VelocityAlignmentSpeed);
+
+	return NewAgent;
 }
 
 // TODO : Replace this with AddChaseTarget(AActor* NewChaseTarget) that puts multiple chase targets into an array.
