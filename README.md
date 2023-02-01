@@ -3,8 +3,8 @@
 Flocking behaviour model based on Craig Reynold's Algorithms for Autonomous Agents.
 
 Features :
-1. Replaceable and modifiable behaviours.
-2. Spatial Grid Optimization.
+1. Spatial Grid Optimization.
+2. Multithreaded.
 
 Demo :
 
