@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿
 
 #pragma once
 
@@ -17,12 +17,6 @@ class AUTONOMOUSAGENTS_API USimulatorConfiguration : public UDataAsset
 	GENERATED_BODY()
 	
 public:
-
-	UPROPERTY(EditDefaultsOnly, Category = "Simulation Settings", meta = (UIMin = "1", UIMax = "32", ClampMin = "0", ClampMax = "32", Delta = "1"))
-	uint32 ThreadCount = 6;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Simulation Settings")
-	float FixedDeltaTime = 0.016f;
 		
 	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings")
 	FRotator RotationOffset;
@@ -39,9 +33,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Leader Check Settings", meta = (EditCondition = "!bForceLeadership", EditConditionHides = "true"))
 	FSearchParameters LeaderCheckParameters;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Behaviours")
+	UPROPERTY(EditDefaultsOnly, Category = "Behaviours", meta = (EditCondition = "!bForceLeadership", EditConditionHides = "true"))
 	TArray<TSubclassOf<UBaseAutonomousBehaviour>> ChaseBehaviors;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Behaviours")
+	UPROPERTY(EditDefaultsOnly, Category = "Behaviours", meta = (EditCondition = "!bForceLeadership", EditConditionHides = "true"))
 	TArray<TSubclassOf<UBaseAutonomousBehaviour>> FlockBehaviors;
 };

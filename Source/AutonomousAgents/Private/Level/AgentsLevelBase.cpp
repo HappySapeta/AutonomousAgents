@@ -51,7 +51,7 @@ void AAgentsLevelBase::SpawnAgents()
 	}
 
 #ifdef UE_BUILD_DEBUG
-	const FString Message = FString::Printf(TEXT("[AgentsSandboxLevelScript][SpawnActorsImmediately] %d Actors were spawned."), NumAgents);
+	const FString Message = FString::Printf(TEXT("%d Agents were spawned."), NumAgents);
 	UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Message);
 #endif
@@ -77,15 +77,9 @@ void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation, const uint32 Inst
 {
 	SpatialGridSubsystem->RegisterAgent(SimulationSubsystem->CreateAgent(SpawnLocation));
 	
-	const FTransform& Transform = FTransform(SpawnConfiguration->RotationOffset, SpawnLocation);
+	const FTransform& Transform = FTransform(FRotator::ZeroRotator, SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
 	InstancedStaticMeshComponent->SetMaterial(InstanceIndex, SpawnConfiguration->Material);
-}
-
-void AAgentsLevelBase::StartSimulation() const
-{
-	checkf(SimulationSubsystem, TEXT("Attempted to start simulation without initializing null SimulatorSubsystem."))
-	SimulationSubsystem->StartSimulation();
 }
 
 void AAgentsLevelBase::CreateInstancedStaticMeshComponent()

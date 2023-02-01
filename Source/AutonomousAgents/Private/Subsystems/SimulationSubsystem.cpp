@@ -1,26 +1,17 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#include "Subsystems/SimulationSubsystem.h"
+﻿#include "Subsystems/SimulationSubsystem.h"
 #include "Subsystems/SpatialGridSubsystem.h"
 
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
 #include "Behaviours/Base/SeekingInterface.h"
 
+#include <Kismet/KismetMathLibrary.h>
+#include <Kismet/GameplayStatics.h>
+
 #include "Common/Utility.h"
-#include "Kismet/KismetMathLibrary.h"
-
 #include "Configuration/SimulatorConfiguration.h"
-#include "Kismet/GameplayStatics.h"
-#include "Level/AgentsLevelBase.h"
 
-USimulationSubsystem::~USimulationSubsystem()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Simulation Subsystem : Destructor"));
-}
-
-// TODO: This is a temporary patch to a problem where we can't prevent CDOs from serializing certain variables.
-// This function shouldn't exist at all.
+// TODO: This is a temporary patch to a problem where we can't prevent CDOs from serializing certain variables. This function shouldn't exist.
 void USimulationSubsystem::ResetInfluences() const
 {
 	for (TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
@@ -46,22 +37,20 @@ void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 	ResetInfluences();
 }
 
-void USimulationSubsystem::StartSimulation()
-{
-	checkf(Configuration != nullptr, TEXT("Simulation Configuration is null."));
-	//LaunchThreads();
-	//LaunchAsyncOperations();
-}
-
+// TODO : I need to find a way to run the loop without relying on Tick.
 void USimulationSubsystem::Tick(const float DeltaTime)
 {
-	ParallelFor(AgentsData.Num(),
-				[this, DeltaTime](const int32 Index)
-				{
-					RunSimulationLogicOnSingleAgent(Index);
-					UpdateAgent(Index, DeltaTime);
-				},
-				EParallelForFlags::BackgroundPriority);
+	ParallelFor
+	(
+		AgentsData.Num(),
+		[this, DeltaTime](const int32 Index)
+		{
+			RunSimulationLogicOnSingleAgent(Index);
+			UpdateAgent(Index, DeltaTime);
+			UpdateTransform(Index);
+		},
+		EParallelForFlags::BackgroundPriority
+	);
 }
 
 UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
@@ -102,75 +91,6 @@ void USimulationSubsystem::UpdateTransform(const uint32 AgentIndex)
 const TArray<FTransform>& USimulationSubsystem::GetTransforms() const
 {
 	return AgentTransforms;
-}
-
-void USimulationSubsystem::LaunchThreads()
-{
-	int LowerLimit = 0;
-	const uint32 BucketSize = FMath::CeilToInt32(AgentsData.Num() / static_cast<float>(Configuration->ThreadCount));
-
-	for (uint32 ThreadIndex = 0; ThreadIndex < Configuration->ThreadCount; ++ThreadIndex)
-	{
-		const int UpperLimit = FMath::Min(AgentsData.Num() - 1, static_cast<int>(LowerLimit + BucketSize - 1));
-		const FString& ThreadName = "SimulationThread" + ThreadIndex;
-		FRunData Data(LowerLimit, UpperLimit,
-		              FRunData::FRunnableCallback::CreateUObject(
-			              this, &USimulationSubsystem::RunSimulationLogicOnSingleAgent), ThreadName);
-
-		Runnables.Add(MakeUnique<FSimulationRunnable>(Data));
-		UE_LOG(LogTemp, Warning, TEXT("Created New Thread : Bucket [%d, %d]"), LowerLimit, UpperLimit);
-
-		LowerLimit += BucketSize;
-	}
-}
-
-void USimulationSubsystem::LaunchAsyncOperations()
-{
-	AsyncResults.Reset();
-
-	uint32 LowerLimit = 0;
-	const uint32 BucketSize = FMath::CeilToInt32(AgentsData.Num() / static_cast<float>(Configuration->ThreadCount));
-
-	for (uint32 ThreadIndex = 0; ThreadIndex < Configuration->ThreadCount; ++ThreadIndex)
-	{
-		uint32 UpperLimit = FMath::Min(AgentsData.Num() - 1, static_cast<int>(LowerLimit + BucketSize - 1));
-		AsyncResults.Add
-		(
-			Async
-			(
-				EAsyncExecution::Thread,
-				[this, LowerLimit, UpperLimit]()
-				{
-					RunAsyncLogic(LowerLimit, UpperLimit);
-				}
-			)
-		);
-
-		LowerLimit += BucketSize;
-	}
-}
-
-void USimulationSubsystem::RunAsyncLogic(const uint32 LowerLimit, const uint32 UpperLimit) const
-{
-	while (!bStopRequested)
-	{
-		for (uint32 AgentIndex = LowerLimit; AgentIndex <= UpperLimit; ++AgentIndex)
-		{
-			RunSimulationLogicOnSingleAgent(AgentIndex);
-		}
-	}
-}
-
-void USimulationSubsystem::BeginDestroy()
-{
-	Super::BeginDestroy();
-	UE_LOG(LogTemp, Warning, TEXT("Simulation Subsystem : BeginDestroy"));
-	bStopRequested = true;
-
-	for (const TFuture<void>& Result : AsyncResults)
-	{
-		Result.Wait();
-	}
 }
 
 void USimulationSubsystem::RunSimulationLogicOnSingleAgent(const uint32 AgentIndex) const
@@ -225,12 +145,6 @@ void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float Delt
 {
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 	TargetAgent->UpdateState(DeltaSeconds);
-	UpdateTransform(AgentIndex);
-}
-
-void USimulationSubsystem::FixedUpdateAgent(const uint32 AgentIndex)
-{
-	UpdateAgent(AgentIndex, Configuration->FixedDeltaTime);
 }
 
 bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const

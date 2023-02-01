@@ -1,14 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
 #include "Core/Agent.h"
-#include "Core/SimulationRunnable.h"
 #include "SimulationSubsystem.generated.h"
 
-class AAgentsLevelBase;
 // Forward declarations.
 class USimulatorConfiguration;
 class USpatialGridSubsystem;
@@ -25,8 +21,6 @@ class AUTONOMOUSAGENTS_API USimulationSubsystem : public UGameInstanceSubsystem
 	DECLARE_DELEGATE_TwoParams(FOnAgentUpdatedEvent, uint32, const FTransform&);
 	
 public:
-
-	~USimulationSubsystem();
 	
 	/**
 	 * @brief Resets the influence setting across all added behaviours.
@@ -59,9 +53,6 @@ public:
 	 * @return The newly created agent.
 	 */
 	UAgent* CreateAgent(const FVector& InitialLocation = FVector::ZeroVector, const FVector& InitialVelocity = FVector::ZeroVector);
-
-	// Starts Worker Threads.
-	void StartSimulation();
 	
 	void Tick(float DeltaTime);
 
@@ -77,20 +68,11 @@ public:
 	 * @return Array of Transforms.
 	 */
 	const TArray<FTransform>& USimulationSubsystem::GetTransforms() const;
-	
-	virtual void BeginDestroy() override;
 
 private:
 
-	// Internal call to create and launch threads.
-	virtual void LaunchThreads();
-
 	void UpdateTransform(uint32 AgentIndex);
 	
-	void LaunchAsyncOperations();
-	
-	void RunAsyncLogic(const uint32 LowerLimit, const uint32 UpperLimit) const;
-
 	/**
 	 * @brief Runs behaviours and sense updates on an Agent.
 	 * Designed to simply the multi-threaded operations.
@@ -117,13 +99,7 @@ private:
 	 * @param DeltaSeconds Game time elapsed during last frame modified by the time dilation
 	 */
 	virtual void UpdateAgent(uint32 AgentIndex, float DeltaSeconds);
-
-	/**
-	 * @brief Perform physics update (location and velocity) on a certain agent, using a variable fixed delta-time.
-	 * @param AgentIndex Unique integer that identifies an agent.
-	 */
-	virtual void FixedUpdateAgent(const uint32 AgentIndex);
-
+	
 	/**
 	 * @brief Checks all nearby agents and uses a view cone filter
 	 * to determine if an agent must follow others or chase a target.
@@ -132,43 +108,34 @@ private:
 	 * @return 
 	 */
 	virtual bool ShouldAgentFlock(const uint32 AgentIndex) const;
-
-
-public:
-
-	FOnAgentUpdatedEvent OnAgentUpdatedEvent;
 	
 private:
 	
-	// Reference to a UDataAsset - USimulationSettings that contains all
-	// information that the SimulationSystem needs to perform its operations.
+	/**
+	* Reference to a UDataAsset - USimulationSettings that contains all
+	* information that the SimulationSystem needs to perform its operations.
+	*/
 	UPROPERTY(Transient)
 	USimulatorConfiguration* Configuration;
 
-	// TODO : Replace this with an array of actors that agents can choose from.
-	// Reference to a an actor that all agents that do not flock, must chase.
+	/**
+	* @brief TODO : Replace this with an array of actors that agents can choose from.
+	* Reference to a an actor that all agents that do not flock, must chase.
+	*/
 	UPROPERTY(Transient)
 	AActor* ChaseTarget;
 
-	// Reference to the USpatialGridSubsystem, a system that maintains an implicit grid,
-	// for finding agents in a region, very quickly. 
+	/**
+	* @brief Reference to the USpatialGridSubsystem, a system that maintains an implicit grid,
+	* for finding agents in a region, very quickly. 
+	*/
 	UPROPERTY(Transient)
 	USpatialGridSubsystem* SpatialGrid;
 
 	// Contains data about all agents currently being simulated.
 	UPROPERTY(Transient)
 	TArray<UAgent*> AgentsData;
-
-private:
-
-	// Thread objects that break the simulation logic into pieces and run them independently.
-	TArray<TUniquePtr<FSimulationRunnable>> Runnables;
-
-	TArray<TFuture<void>> AsyncResults;
-	bool bStopRequested = false;
-
-	UPROPERTY(Transient)
-	AAgentsLevelBase* AgentsLevelBase = nullptr;
-
+		
+	// Array that contains Transform information of all agents.
 	TArray<FTransform> AgentTransforms;
 };

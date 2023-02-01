@@ -10,8 +10,10 @@
 // This should ideally be 64 since we use a 64-bit unsigned integer, but may vary to support other sizes. 
 constexpr int GBitRowSize = 64;
 
-// Number of integers in a BitBlock. Use a larger number to support more agents.
-// E.g : with GBitRowSize of 64, and GBlockSize of 20 the spatial grid can only handle 64 * 20 that is 1280 agents.
+/**
+* Number of integers in a BitBlock. Use a larger number to support more agents.
+* E.g : with GBitRowSize of 64, and GBlockSize of 20 the spatial grid can only handle 64 * 20 that is 1280 agents.
+*/
 constexpr int GBlockSize = 100;
 
 // Represents a location on the grid in terms of Column and Row Indices.
@@ -149,24 +151,30 @@ private:
 
 protected:
 
-	// Total number of blocks in either Rows or columns.
-	// Since the Grid is designed to be a 2-D Square, number of row and column blocks is the same.
+	/**
+	* Total number of blocks in either Rows or columns.
+	* Since the Grid is designed to be a 2-D Square, number of row and column blocks is the same.
+	*/
 	uint32 NumBlocks;
 
 	// Agents being actively tracked in the grid.
 	UPROPERTY(Transient)
 	TArray<const UAgent*> GridAgents;
 
-	// Reference to a UDataAsset that is essential for initializing the
-	// Grid with importance information like size and resolution.
+	/**
+	* Reference to a UDataAsset that is essential for initializing the
+	* Grid with importance information like size and resolution.
+	*/
 	UPROPERTY(Transient)
 	const UGridConfiguration* GridParameters;
 
 	// An array of BitBlocks (stack of 64-bit integers) that register indices of agents based on their X-Coordinate.
 	TArray<FBitBlock> RowBlocks;
-
-	// An array of BitBlocks (stack of 64-bit integers) that register indices of agents based on their Y-Coordinate.
-	// Each dimension has its own array of BitBlocks. The current implementation of the SpatialGrid supports
-	// two dimensions (X & Y) only.
+	
+	/**
+	* An array of BitBlocks (stack of 64-bit integers) that register
+	* indices of agents based on their Y-Coordinate. Each dimension has its own array of BitBlocks.
+	* The current implementation of the SpatialGrid supports two dimensions (X & Y) only.
+	*/
 	TArray<FBitBlock> ColumnBlocks;
 };

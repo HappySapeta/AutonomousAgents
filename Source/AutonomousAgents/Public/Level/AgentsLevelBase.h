@@ -39,12 +39,6 @@ public:
 	void SpawnAgents();
 
 	/**
-	 * @brief Calls SimulationSubsystem to start the simulation.
-	 */
-	UFUNCTION(BlueprintCallable)
-	void StartSimulation() const;
-
-	/**
 	 * @brief Applies a multiplier to the influence setting of selected Behaviour.
 	 * @param TargetBehaviour The behaviour that is to be modified.
 	 * @param Scale Amount of scale to be applied.
@@ -106,8 +100,10 @@ protected:
 	UPROPERTY(Transient)
 	UInstancedStaticMeshComponent* InstancedStaticMeshComponent;
 
-	// The configuration UDataAsset that this AgentsLevelBase Actor
-	// uses to get all its configuration information from.
+	/**
+	* The configuration UDataAsset that this AgentsLevelBase Actor
+	* uses to get all its configuration information from.
+	*/
 	UPROPERTY(Transient)
 	const USpawnConfiguration* SpawnConfiguration;
 

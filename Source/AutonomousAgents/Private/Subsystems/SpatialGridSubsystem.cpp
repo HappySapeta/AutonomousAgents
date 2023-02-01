@@ -1,4 +1,3 @@
-
 #include "Subsystems/SpatialGridSubsystem.h"
 
 void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfiguration)

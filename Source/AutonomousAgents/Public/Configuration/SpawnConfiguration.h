@@ -33,8 +33,5 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Visual")
 	UMaterialInstance* Material;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings")
-	FRotator RotationOffset;
 	
 };
