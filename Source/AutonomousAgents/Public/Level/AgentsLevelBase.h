@@ -88,7 +88,7 @@ private:
 	 * It also creates an static mesh instance for this agent. 
 	 * @param SpawnLocation The starting location of the new agent.
 	 */
-	void SpawnSingleAgent(FVector SpawnLocation) const;
+	void SpawnSingleAgent(FVector SpawnLocation, const uint32 InstanceIndex) const;
 
 	/**
 	 * @brief Creates and registers a InstancedStaticMeshComponent.

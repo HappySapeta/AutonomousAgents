@@ -41,7 +41,7 @@ void AAgentsLevelBase::SpawnAgents()
 	{
 		while(SpawnLocation.Y >= LowerBound.Y && SpawnLocation.Y <= UpperBound.Y)
 		{
-			SpawnSingleAgent(SpawnLocation);
+			SpawnSingleAgent(SpawnLocation, NumAgents);
 			++NumAgents;
 			SpawnLocation.Y += SpawnConfiguration->Separation;
 		}
@@ -50,9 +50,12 @@ void AAgentsLevelBase::SpawnAgents()
 		SpawnLocation.Y = SpawnConfiguration->Origin.Y - Span;
 	}
 
+#ifdef UE_BUILD_DEBUG
 	const FString Message = FString::Printf(TEXT("[AgentsSandboxLevelScript][SpawnActorsImmediately] %d Actors were spawned."), NumAgents);
 	UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Message);
+#endif
+	
 }
 
 void AAgentsLevelBase::Tick(float DeltaSeconds)
@@ -66,27 +69,17 @@ void AAgentsLevelBase::Tick(float DeltaSeconds)
 
 void AAgentsLevelBase::UpdateInstancedMeshes() const
 {
-	int32 AgentIndex = 0;
-	const FRotator& RotationOffset = SpawnConfiguration->RotationOffset;
-	
-	//for(;AgentIndex < NumAgents - 1; ++AgentIndex)
-	//{
-	//	InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, SimulationSubsystem->GetTransform(AgentIndex, RotationOffset), true, false);
-	//}
-//
-	//InstancedStaticMeshComponent->UpdateInstanceTransform(AgentIndex, SimulationSubsystem->GetTransform(AgentIndex, RotationOffset), true, true);
-
 	InstancedStaticMeshComponent->BatchUpdateInstancesTransforms(0, SimulationSubsystem->GetTransforms(), true, false);
 	InstancedStaticMeshComponent->BatchUpdateInstancesTransform(NumAgents - 1, 1, SimulationSubsystem->GetTransform(NumAgents - 1), true, true);
 }
 
-void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation) const
+void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation, const uint32 InstanceIndex) const
 {
 	SpatialGridSubsystem->RegisterAgent(SimulationSubsystem->CreateAgent(SpawnLocation));
 	
 	const FTransform& Transform = FTransform(SpawnConfiguration->RotationOffset, SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
-	InstancedStaticMeshComponent->SetMaterial(NumAgents, SpawnConfiguration->Material);
+	InstancedStaticMeshComponent->SetMaterial(InstanceIndex, SpawnConfiguration->Material);
 }
 
 void AAgentsLevelBase::StartSimulation() const

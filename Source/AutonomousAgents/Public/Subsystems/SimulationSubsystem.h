@@ -32,6 +32,7 @@ public:
 	 * @brief Resets the influence setting across all added behaviours.
 	 */
 	void ResetInfluences() const;
+	
 	/**
 	 * @brief Initialize the simulator with a configuration asset.
 	 * 
@@ -42,7 +43,7 @@ public:
 	 * @param NewConfiguration The configuration UDataAsset that the simulator must use to get all its information from. 
 	 */
 	UFUNCTION(BlueprintCallable)
-	void Init(USimulatorConfiguration* NewConfiguration, AAgentsLevelBase* LevelActor);
+	void Init(USimulatorConfiguration* NewConfiguration);
 
 	/**
 	 * @brief Assigns a chase target.
@@ -68,10 +69,13 @@ public:
 	 * @brief Returns the current Transform of an agent addressed by its Index.
 	 * The rotation of an Agent is calculated from its current velocity direction.
 	 * @param AgentIndex Unique integer that identifies an agent.
-	 * @param RotationOffset Optional Offset applied to the transform's rotation.
 	 */
 	FTransform GetTransform(const uint32 AgentIndex) const;
-	
+
+	/**
+	 * @brief Returns an array that contains updated transform objects of all Agents.
+	 * @return Array of Transforms.
+	 */
 	const TArray<FTransform>& USimulationSubsystem::GetTransforms() const;
 	
 	virtual void BeginDestroy() override;

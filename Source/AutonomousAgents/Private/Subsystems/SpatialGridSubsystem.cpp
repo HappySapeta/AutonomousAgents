@@ -1,11 +1,6 @@
 
 #include "Subsystems/SpatialGridSubsystem.h"
 
-USpatialGridSubsystem::~USpatialGridSubsystem()
-{
-	UE_LOG(LogTemp, Warning, TEXT("SpatialGrid Subsystem : Destructor"));
-}
-
 void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration, TEXT("NewConfiguration cannot be null."));

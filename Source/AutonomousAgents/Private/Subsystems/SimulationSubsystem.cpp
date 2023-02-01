@@ -36,14 +36,13 @@ void USimulationSubsystem::ResetInfluences() const
 	}
 }
 
-void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration, AAgentsLevelBase* LevelActor)
+void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
 
 	Configuration = NewConfiguration;
 	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
 
-	AgentsLevelBase = LevelActor;
 	ResetInfluences();
 }
 

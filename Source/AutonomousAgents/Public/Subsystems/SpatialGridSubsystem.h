@@ -73,10 +73,6 @@ class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
 
 public:
 	
-	~USpatialGridSubsystem();
-
-public:
-	
 	/**
 	 * @brief Reserves and initializes arrays with 0's.
 	 * @param NewConfiguration The configuration UDataAsset that the subsystem must use to get all its configuration information.
@@ -117,16 +113,6 @@ public:
 	 */
 	void TryDrawCell(const FGridCellLocation& GridLocation) const;
 
-private:
-	
-	/**
-	 * 1. Iterates through all registered agents.
-	 * 2. Fetches their cartesian location.
-	 * 3. Maps them to a location on the Grid.
-	 * 4. Updates bitmasks of the corresponding Grid Location.
-	 */
-	virtual void UpdateGrid();
-
 protected:
 	
 	/**
@@ -150,6 +136,16 @@ protected:
 
 	// Fills all block arrays with 0s.
 	virtual void ResetBlocks();
+
+private:
+	
+	/**
+	 * 1. Iterates through all registered agents.
+	 * 2. Fetches their cartesian location.
+	 * 3. Maps them to a location on the Grid.
+	 * 4. Updates bitmasks of the corresponding Grid Location.
+	 */
+	virtual void UpdateGrid();
 
 protected:
 
