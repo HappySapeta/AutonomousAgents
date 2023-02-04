@@ -1,4 +1,4 @@
-#include "Subsystems/SpatialGridSubsystem.h"
+#include "SpatialGrid/Public/SpatialGridSubsystem.h"
 
 void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfiguration)
 {
@@ -23,7 +23,7 @@ void USpatialGridSubsystem::Update()
 	UpdateGrid();
 }
 
-void USpatialGridSubsystem::RegisterAgent(const UAgent* NewAgentData)
+void USpatialGridSubsystem::RegisterAgent(const FGridAgent* NewAgentData)
 {
 	GridAgents.AddUnique(NewAgentData);
 }
@@ -77,7 +77,7 @@ void USpatialGridSubsystem::UpdateGrid()
 	{
 		if(AgentIndex >= GBlockSize * GBitRowSize) break;
 
-		const UAgent* Agent = GridAgents[AgentIndex];
+		const FGridAgent* Agent = GridAgents[AgentIndex];
 		
 		// Find array indices
 		FGridCellLocation GridLocation;
