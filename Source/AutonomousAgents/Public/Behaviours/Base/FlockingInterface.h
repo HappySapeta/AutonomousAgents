@@ -14,7 +14,7 @@ class UFlockingInterface : public UInterface
 };
 
 /**
- * 
+ * Interface for all flocking behaviours.
  */
 class AUTONOMOUSAGENTS_API IFlockingInterface
 {

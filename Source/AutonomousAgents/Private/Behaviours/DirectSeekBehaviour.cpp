@@ -15,11 +15,6 @@ FVector UDirectSeekBehaviour::CalculateSeekForce(const UAgent* AffectedAgentData
 	DesiredVelocity *= MaxSpeed;
 
 	const FVector& ChaseManeuver = DesiredVelocity - AffectedAgentData->Velocity;
-
-	if(bDebug)
-	{
-		DrawDebugLine(ChaseTarget->GetWorld(), AffectedAgentData->Location, ChaseTarget->GetActorLocation(), DebugColor);
-	}
 	
 	return ChaseManeuver * Influence * InfluenceScale;
 }

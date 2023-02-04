@@ -113,8 +113,7 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 		{
 			if (const ISeekingInterface* SeekingInterface = Cast<ISeekingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget,
-				                                                      Configuration->AgentsMaxSpeed);
+				MovementForce += SeekingInterface->CalculateSeekForce(TargetAgent, ChaseTarget, Configuration->AgentsMaxSpeed);
 			}
 		}
 	}
@@ -124,8 +123,7 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 		{
 			if (const IFlockingInterface* FlockingInterface = Cast<IFlockingInterface>(Behaviour->GetDefaultObject()))
 			{
-				MovementForce += FlockingInterface->CalculateSteerForce(
-					TargetAgent, AgentsData, Configuration->AgentsMaxSpeed);
+				MovementForce += FlockingInterface->CalculateSteerForce(TargetAgent, AgentsData, Configuration->AgentsMaxSpeed);
 			}
 		}
 	}
@@ -139,8 +137,7 @@ void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
 	TargetAgent->NearbyAgentIndices.Reset();
 	if (SpatialGrid)
 	{
-		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange,
-		                          TargetAgent->NearbyAgentIndices);
+		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices);
 	}
 }
 

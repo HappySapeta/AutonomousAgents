@@ -3,16 +3,21 @@
 #include <CoreMinimal.h>
 #include "GridConfiguration.generated.h"
 
+/**
+ * Configures a Spatial Grid's properties like dimensions and resolution - including debugging options.
+ */
 UCLASS(Blueprintable)
 class UGridConfiguration : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup", meta = (UIMin = "1", UIMax = "100", ClampMin = "1", ClampMax = "100"))
+
+	// Number of rows and columns in the Grid.
+	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup", meta = (UIMin = "5", UIMax = "100", ClampMin = "1", ClampMax = "100"))
 	uint32 Resolution = 10;
 
+	// World space range of the Spatial Grid along X & Y Dimensions.
 	UPROPERTY(EditDefaultsOnly, Category = "Grid Setup")
 	FFloatRange Range = FFloatRange(-2000.0f, 2000.0f);
 

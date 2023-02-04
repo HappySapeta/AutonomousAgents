@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
@@ -8,7 +7,7 @@
 #include "CohesionBehaviour.generated.h"
 
 /**
- * 
+ * Makes the agents clump together.
  */
 UCLASS()
 class AUTONOMOUSAGENTS_API UCohesionBehaviour : public UBaseFlockingBehaviour, public IFlockingInterface

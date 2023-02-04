@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 #include <UObject/Interface.h>
@@ -15,7 +14,7 @@ class USeekingInterface : public UInterface
 };
 
 /**
- * 
+ * Interface for all seeking/chasing behaviours.
  */
 class AUTONOMOUSAGENTS_API ISeekingInterface
 {

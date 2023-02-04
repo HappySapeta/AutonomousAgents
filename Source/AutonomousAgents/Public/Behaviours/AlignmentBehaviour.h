@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
@@ -8,7 +7,7 @@
 #include "AlignmentBehaviour.generated.h"
 
 /**
- * 
+ * Makes an agent move along in the direction of other agents.
  */
 UCLASS()
 class AUTONOMOUSAGENTS_API UAlignmentBehaviour : public UBaseFlockingBehaviour, public IFlockingInterface

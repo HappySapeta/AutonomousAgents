@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
@@ -8,7 +7,7 @@
 #include "DirectSeekBehaviour.generated.h"
 
 /**
- * 
+ * Makes the agent chase after a target.
  */
 UCLASS(Blueprintable)
 class AUTONOMOUSAGENTS_API UDirectSeekBehaviour : public UBaseAutonomousBehaviour, public ISeekingInterface

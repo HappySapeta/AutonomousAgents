@@ -45,6 +45,7 @@ private:
 
 private:
 
+	// The speed at which the agent aligns itself along its velocity.
 	float VelocityAlignmentSpeed = 0.1f;
 	
 };

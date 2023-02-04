@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
@@ -8,7 +7,7 @@
 #include "SeparationBehaviour.generated.h"
 
 /**
- * 
+ * Moves the agent to avoid other agents.
  */
 UCLASS()
 class AUTONOMOUSAGENTS_API USeparationBehaviour : public UBaseFlockingBehaviour, public IFlockingInterface

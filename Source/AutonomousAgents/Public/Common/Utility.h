@@ -4,7 +4,7 @@
 #include <CoreMinimal.h>
 
 /**
- * 
+ * Common math functions.
  */
 class AUTONOMOUSAGENTS_API Utility
 {

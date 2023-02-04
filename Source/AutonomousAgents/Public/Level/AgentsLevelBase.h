@@ -17,7 +17,6 @@ class USpatialGridSubsystem;
 UCLASS(Blueprintable)
 class AUTONOMOUSAGENTS_API AAgentsLevelBase : public ALevelScriptActor
 {
-	
 	GENERATED_BODY()
 	
 public:

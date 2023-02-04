@@ -3,6 +3,9 @@
 #include <CoreMinimal.h>
 #include "SearchParameters.generated.h"
 
+/**
+ * Defines parameters used for performing specific filtering of nearby agents.
+ */
 USTRUCT(BlueprintType)
 struct FSearchParameters
 {

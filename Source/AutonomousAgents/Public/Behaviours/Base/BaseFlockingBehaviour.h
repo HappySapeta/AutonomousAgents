@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
@@ -10,7 +9,8 @@
 #include "BaseFlockingBehaviour.generated.h"
 
 /**
- * 
+ * Base class for all flocking behaviours.
+ * Includes a SearchConfig parameter used to filter nearby agents. 
  */
 UCLASS(Abstract)
 class AUTONOMOUSAGENTS_API UBaseFlockingBehaviour : public UBaseAutonomousBehaviour

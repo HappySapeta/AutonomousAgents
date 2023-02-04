@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include <CoreMinimal.h>
 
@@ -7,7 +6,7 @@
 #include "BaseAutonomousBehaviour.generated.h"
 
 /**
- * 
+ * Base class for all types of behaviours.
  */
 UCLASS(Abstract, BlueprintType)
 class AUTONOMOUSAGENTS_API UBaseAutonomousBehaviour : public UObject

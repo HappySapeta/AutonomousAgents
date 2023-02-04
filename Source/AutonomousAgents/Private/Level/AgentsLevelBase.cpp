@@ -1,4 +1,3 @@
-
 #include "Level/AgentsLevelBase.h"
 #include "Configuration/SpawnConfiguration.h"
 #include "Subsystems/SpatialGridSubsystem.h"
@@ -50,12 +49,9 @@ void AAgentsLevelBase::SpawnAgents()
 		SpawnLocation.Y = SpawnConfiguration->Origin.Y - Span;
 	}
 
-#ifdef UE_BUILD_DEBUG
-	const FString Message = FString::Printf(TEXT("%d Agents were spawned."), NumAgents);
+	const FString Message = FString::Printf(TEXT("Simulating %d agents."), NumAgents);
 	UE_LOG(LogTemp, Log, TEXT("%s"), *Message);
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, Message);
-#endif
-	
 }
 
 void AAgentsLevelBase::Tick(float DeltaSeconds)
