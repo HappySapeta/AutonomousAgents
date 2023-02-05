@@ -1,5 +1,5 @@
 ﻿#include "Subsystems/SimulationSubsystem.h"
-#include "Subsystems/SpatialGridSubsystem.h"
+#include "SpatialGridSubsystem.h"
 
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
@@ -11,49 +11,20 @@
 #include "Common/Utility.h"
 #include "Configuration/SimulatorConfiguration.h"
 
-// TODO: This is a temporary patch to a problem where we can't prevent CDOs from serializing certain variables. This function shouldn't exist.
-void USimulationSubsystem::ResetInfluences() const
-{
-	for (TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
-	{
-		// CDO always serialize influence parameters, it is important to reset them before starting the simulation.
-		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
-	}
-
-	for (TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->FlockBehaviors)
-	{
-		// CDO always serialize influence parameters, it is important to reset them before starting the simulation.
-		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
-	}
-}
-
-void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
+void USimulationSubsystem::InitializeSimulator(const USimulatorConfiguration* NewConfiguration, const UGridConfiguration* GridConfiguration)
 {
 	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
 
 	Configuration = NewConfiguration;
-	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
-
+	
+	SpatialGrid = GetWorld()->GetSubsystem<USpatialGridSubsystem>();
+	checkf(SpatialGrid, TEXT("No spatial grid subsystem could be found"));
+	SpatialGrid->InitializeGrid(GridConfiguration);
+	
 	ResetInfluences();
 }
 
-// TODO : I need to find a way to run the loop without relying on Tick.
-void USimulationSubsystem::Tick(const float DeltaTime)
-{
-	ParallelFor
-	(
-		AgentsData.Num(),
-		[this, DeltaTime](const int32 Index)
-		{
-			RunSimulationLogicOnSingleAgent(Index);
-			UpdateAgent(Index, DeltaTime);
-			UpdateTransform(Index);
-		},
-		EParallelForFlags::BackgroundPriority
-	);
-}
-
-UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
+void USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
 {
 	AgentTransforms.Add(FTransform::Identity);
 
@@ -63,32 +34,14 @@ UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const 
 	NewAgent->Location = InitialLocation;
 	NewAgent->Velocity = InitialVelocity;
 	NewAgent->SetVelocityAlignmentSpeed(Configuration->VelocityAlignmentSpeed);
-
-	return NewAgent;
+	
+	SpatialGrid->AddAgent(InitialLocation);
 }
 
-// TODO : Replace this with AddChaseTarget(AActor* NewChaseTarget) that puts multiple chase targets into an array.
 void USimulationSubsystem::SetChaseTarget(AActor* NewChaseTarget)
 {
+	// TODO : Replace this with AddChaseTarget(AActor* NewChaseTarget) that puts multiple chase targets into an array.
 	ChaseTarget = NewChaseTarget;
-}
-
-FTransform USimulationSubsystem::GetTransform(const uint32 AgentIndex) const
-{
-	if(!AgentTransforms.IsValidIndex(AgentIndex))
-	{
-		return FTransform::Identity;
-	}
-
-	return AgentTransforms[AgentIndex];
-}
-
-void USimulationSubsystem::UpdateTransform(const uint32 AgentIndex)
-{
-	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(AgentsData[AgentIndex]->Velocity.GetSafeNormal());
-	const FVector& Location = AgentsData[AgentIndex]->Location;
-	
-	AgentTransforms[AgentIndex] = FTransform(Rotator + Configuration->RotationOffset, Location);
 }
 
 const TArray<FTransform>& USimulationSubsystem::GetTransforms() const
@@ -96,10 +49,41 @@ const TArray<FTransform>& USimulationSubsystem::GetTransforms() const
 	return AgentTransforms;
 }
 
-void USimulationSubsystem::RunSimulationLogicOnSingleAgent(const uint32 AgentIndex) const
+void USimulationSubsystem::StartSimulation()
 {
-	SenseNearbyAgents(AgentIndex);
-	ApplyBehaviourOnAgent(AgentIndex);
+	AsyncSimulation = AsyncThread
+	(
+		[this]()
+		{
+			
+		}
+	);
+}
+
+void USimulationSubsystem::Tick(const float DeltaTime)
+{
+	ParallelFor
+	(
+		AgentsData.Num(),
+		[this, DeltaTime](int32 AgentIndex)
+		{
+			SenseNearbyAgents(AgentIndex);
+			ApplyBehaviourOnAgent(AgentIndex);
+			UpdateAgent(AgentIndex, DeltaTime);
+			UpdateTransform(AgentIndex);
+			SpatialGrid->UpdateSingleAgent(AgentIndex, AgentsData[AgentIndex]->Location);
+		}
+	);
+}
+
+void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
+{
+	UAgent* TargetAgent = AgentsData[AgentIndex];
+	TargetAgent->NearbyAgentIndices.Reset();
+	if (SpatialGrid)
+	{
+		SpatialGrid->FindNearbyAgents(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices);
+	}
 }
 
 void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
@@ -131,20 +115,18 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 	TargetAgent->MovementForce = MovementForce;
 }
 
-void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
-{
-	UAgent* TargetAgent = AgentsData[AgentIndex];
-	TargetAgent->NearbyAgentIndices.Reset();
-	if (SpatialGrid)
-	{
-		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices);
-	}
-}
-
 void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float DeltaSeconds)
 {
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 	TargetAgent->UpdateState(DeltaSeconds);
+}
+
+void USimulationSubsystem::UpdateTransform(const uint32 AgentIndex)
+{
+	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(AgentsData[AgentIndex]->Velocity.GetSafeNormal());
+	const FVector& Location = AgentsData[AgentIndex]->Location;
+	
+	AgentTransforms[AgentIndex] = FTransform(Rotator + Configuration->RotationOffset, Location);
 }
 
 bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
@@ -174,4 +156,20 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 
 	// If this Agent cannot see any other agents in its view cone, it cannot flock other agents and should rather chase a target.
 	return NumAgentsFound == 0;
+}
+
+void USimulationSubsystem::ResetInfluences() const
+{
+	// TODO: This is a temporary patch to a problem where we can't prevent CDOs from serializing certain variables. This function shouldn't exist.
+	for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
+	{
+		// CDO always serialize influence parameters, it is important to reset them before starting the simulation.
+		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
+	}
+
+	for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->FlockBehaviors)
+	{
+		// CDO always serialize influence parameters, it is important to reset them before starting the simulation.
+		Cast<UBaseAutonomousBehaviour>(Behaviour.GetDefaultObject())->ResetInfluence();
+	}
 }

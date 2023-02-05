@@ -17,6 +17,12 @@ class AUTONOMOUSAGENTS_API USimulatorConfiguration : public UDataAsset
 	
 public:
 
+	UPROPERTY(EditDefaultsOnly, Category = "Simulation Settings", meta = (UIMin = "1", UIMax = "12", ClampMin = "1", ClampMax = "12"))
+	int ThreadCount = 1;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Simulation Settings", meta = (UIMin = "0.001", ClampMin = "0.001"))
+	float SimulationTimeStep = 0.01f;
+	
 	// Offset applied to the rotation of an Agent's static mesh.
 	UPROPERTY(EditDefaultsOnly, Category = "Agent Settings")
 	FRotator RotationOffset;

@@ -7,7 +7,6 @@
 
 // Forward declarations.
 class USimulationSubsystem;
-class USpatialGridSubsystem; 
 
 /**
  * AgentsLevelBase is a Level Script Actor
@@ -91,9 +90,6 @@ private:
 protected:
 
 	UPROPERTY(Transient)
-	USpatialGridSubsystem* SpatialGridSubsystem;
-
-	UPROPERTY(Transient)
 	USimulationSubsystem* SimulationSubsystem;
 	
 	UPROPERTY(Transient)
@@ -110,8 +106,4 @@ private:
 
 	// Total number of agents being simulated.
 	mutable int NumAgents = 0;
-
-	// Flag used in checks to ensure that initialization has been performed before starting the simulation.
-	bool bInitialized = false;
-	
 };

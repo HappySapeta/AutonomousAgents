@@ -6,15 +6,15 @@
 #include "SimulationSubsystem.generated.h"
 
 // Forward declarations.
-class USimulatorConfiguration;
 class USpatialGridSubsystem;
+class USimulatorConfiguration;
 
 /**
  * Runs core simulation logic and drives all agents.
  * Uses threads/async tasks to distribute its workload over multiple cores.
  */
 UCLASS()
-class AUTONOMOUSAGENTS_API USimulationSubsystem : public UGameInstanceSubsystem
+class AUTONOMOUSAGENTS_API USimulationSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -37,7 +37,7 @@ public:
 	 * @param NewConfiguration The configuration UDataAsset that the simulator must use to get all its information from. 
 	 */
 	UFUNCTION(BlueprintCallable)
-	void Init(USimulatorConfiguration* NewConfiguration);
+	void InitializeSimulator(const USimulatorConfiguration* NewConfiguration, const UGridConfiguration* GridConfiguration);
 
 	/**
 	 * @brief Assigns a chase target.
@@ -50,18 +50,10 @@ public:
 	 * @brief Creates a data for a new agent, and returns it.
 	 * @param InitialLocation Agent's starting location.
 	 * @param InitialVelocity Agent's starting velocity.
-	 * @return The newly created agent.
 	 */
-	UAgent* CreateAgent(const FVector& InitialLocation = FVector::ZeroVector, const FVector& InitialVelocity = FVector::ZeroVector);
+	void CreateAgent(const FVector& InitialLocation = FVector::ZeroVector, const FVector& InitialVelocity = FVector::ZeroVector);
 	
 	void Tick(float DeltaTime);
-
-	/**
-	 * @brief Returns the current Transform of an agent addressed by its Index.
-	 * The rotation of an Agent is calculated from its current velocity direction.
-	 * @param AgentIndex Unique integer that identifies an agent.
-	 */
-	FTransform GetTransform(const uint32 AgentIndex) const;
 
 	/**
 	 * @brief Returns an array that contains updated transform objects of all Agents.
@@ -69,16 +61,12 @@ public:
 	 */
 	const TArray<FTransform>& USimulationSubsystem::GetTransforms() const;
 
-private:
+	UFUNCTION(BlueprintCallable)
+	void StartSimulation();
 
-	void UpdateTransform(uint32 AgentIndex);
+private:
 	
-	/**
-	 * @brief Runs behaviours and sense updates on an Agent.
-	 * Designed to simply the multi-threaded operations.
-	 * @param AgentIndex Unique integer that identifies an agent.
-	 */
-	void RunSimulationLogicOnSingleAgent(const uint32 AgentIndex) const;
+	void UpdateTransform(uint32 AgentIndex);
 
 	/**
 	 * @brief Applies behavioural logic on a certain agent identified by its index.
@@ -108,7 +96,7 @@ private:
 	 * @return 
 	 */
 	virtual bool ShouldAgentFlock(const uint32 AgentIndex) const;
-	
+
 private:
 	
 	/**
@@ -116,7 +104,7 @@ private:
 	* information that the SimulationSystem needs to perform its operations.
 	*/
 	UPROPERTY(Transient)
-	USimulatorConfiguration* Configuration;
+	const USimulatorConfiguration* Configuration;
 
 	/**
 	* @brief TODO : Replace this with an array of actors that agents can choose from.
@@ -135,7 +123,11 @@ private:
 	// Contains data about all agents currently being simulated.
 	UPROPERTY(Transient)
 	TArray<UAgent*> AgentsData;
-		
+	
 	// Array that contains Transform information of all agents.
 	TArray<FTransform> AgentTransforms;
+
+	FTimerHandle SimulationTimerHandle;
+
+	TFuture<void> AsyncSimulation;
 };

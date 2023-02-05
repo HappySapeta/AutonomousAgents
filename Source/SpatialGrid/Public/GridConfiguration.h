@@ -29,15 +29,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDrawGrid", EditConditionHides = "true"))
 	FColor GridColor = FColor::Green;
 
-#pragma region BUGGYCODE
-	//UPROPERTY(EditDefaultsOnly, Category = "Debug Settings")
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings")
 	bool bDebugLookup = false;
 
-	//UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebugLookup", EditConditionHides = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebugLookup", EditConditionHides = "true"))
 	FColor LookupBoxColor = FColor::Red;
 	
-	//UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebugLookup", EditConditionHides = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "Debug Settings", meta = (EditCondition = "bDebugLookup", EditConditionHides = "true"))
 	float LookupBoxSize = 10.0f;
-#pragma endregion
 	
 };

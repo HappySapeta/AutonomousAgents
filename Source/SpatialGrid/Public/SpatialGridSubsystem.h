@@ -3,8 +3,7 @@
 #include <CoreMinimal.h>
 #include <Math/MathFwd.h>
 
-#include "Core/Agent.h"
-#include "Configuration/GridConfiguration.h"
+#include "GridConfiguration.h"
 #include "SpatialGridSubsystem.generated.h"
 
 // This should ideally be 64 since we use a 64-bit unsigned integer, but may vary to support other sizes. 
@@ -17,11 +16,8 @@ constexpr int GBitRowSize = 64;
 constexpr int GBlockSize = 100;
 
 // Represents a location on the grid in terms of Column and Row Indices.
-USTRUCT()
 struct FGridCellLocation
 {
-	GENERATED_BODY()
-	
 	FGridCellLocation()
 		: X(0), Y(0)
 	{}
@@ -29,17 +25,30 @@ struct FGridCellLocation
 	FGridCellLocation(const int XIndex, const int YIndex)
 		: X(XIndex), Y(YIndex)
 	{}
+
+	bool operator==(const FGridCellLocation& Other) const
+	{
+		return Other.X == X && Other.Y == Y;		
+	}
+
+	bool operator!=(const FGridCellLocation& Other) const
+	{
+		return !operator==(Other);
+	}
 	
 	int X; // Row Index
 	int Y; // Column Index
 };
 
+struct FGridAgent
+{
+	FVector Location;
+	FGridCellLocation GridCellLocation;
+};
+
 // Wrapper over an Array of 64-bit Integers.
-USTRUCT()
 struct FBitBlock
 {
-	GENERATED_BODY();
-	
 	FBitBlock()
 	{
 		BitRow.Init(0, GBlockSize);
@@ -69,7 +78,7 @@ struct FBitBlock
  * The SpatialGrid captures the world location of agents and maps their indices into corresponding BitBlocks.
  */
 UCLASS()
-class AUTONOMOUSAGENTS_API USpatialGridSubsystem : public UGameInstanceSubsystem
+class SPATIALGRID_API USpatialGridSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -81,28 +90,21 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void InitializeGrid(const UGridConfiguration* NewConfiguration);
-	
-	/**
-	 * @brief Calls UpdatedGrid to refresh bit blocks with the latest information about all agents.
-	 */
-	UFUNCTION(BlueprintCallable)
-	void Update();
 
 public:
 	
 	/**
 	 * @brief Puts a new agent into the grid.
-	 * @param NewAgentData The SpatialGridSubsystem does not take this agent's ownership and does not perform any modifications to it.
 	 */
-	void RegisterAgent(const UAgent* NewAgentData);
+	void AddAgent(const FVector& Location);
 
 	/**
 	 * @brief Finds all agents in an area of the Grid.
 	 * @param Location Center of the search region.
 	 * @param Radius Radius of the search region.
-	 * @param Out_ActorIndices Output vector of indices of agents that were found.
+	 * @param Out_AgentIndices Output vector of indices of agents that were found.
 	 */
-	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
+	void FindNearbyAgents(const FVector& Location, const float Radius, TArray<uint32>& Out_AgentIndices) const;
 
 	/**
 	 * @brief Draws lines in the world space to visualize the grid.
@@ -114,6 +116,10 @@ public:
 	 * @param GridLocation GridLocation in terms of Row and Column Indices.
 	 */
 	void TryDrawCell(const FGridCellLocation& GridLocation) const;
+
+	void UpdateSingleAgent(uint32 AgentIndex, const FVector& NewLocation);
+
+	void UpdateAllAgents(const TArray<FVector>& NewLocations);
 
 protected:
 	
@@ -137,17 +143,7 @@ protected:
 	virtual bool IsValidGridLocation(const FGridCellLocation& GridLocation) const;
 
 	// Fills all block arrays with 0s.
-	virtual void ResetBlocks();
-
-private:
-	
-	/**
-	 * 1. Iterates through all registered agents.
-	 * 2. Fetches their cartesian location.
-	 * 3. Maps them to a location on the Grid.
-	 * 4. Updates bitmasks of the corresponding Grid Location.
-	 */
-	virtual void UpdateGrid();
+	virtual void RemoveIndexFromCell(const uint32 AgentIndex, const FGridCellLocation& GridCellLocation);
 
 protected:
 
@@ -158,8 +154,7 @@ protected:
 	uint32 NumBlocks;
 
 	// Agents being actively tracked in the grid.
-	UPROPERTY(Transient)
-	TArray<const UAgent*> GridAgents;
+	TArray<FGridAgent> GridAgents;
 
 	/**
 	* Reference to a UDataAsset that is essential for initializing the
@@ -177,4 +172,5 @@ protected:
 	* The current implementation of the SpatialGrid supports two dimensions (X & Y) only.
 	*/
 	TArray<FBitBlock> ColumnBlocks;
+
 };

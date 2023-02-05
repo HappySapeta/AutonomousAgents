@@ -1,6 +1,5 @@
 #include "Level/AgentsLevelBase.h"
 #include "Configuration/SpawnConfiguration.h"
-#include "Subsystems/SpatialGridSubsystem.h"
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Subsystems/SimulationSubsystem.h"
@@ -18,16 +17,11 @@ void AAgentsLevelBase::Init(const USpawnConfiguration* NewSpawnConfiguration)
 	FetchSubsystems();
 	CreateInstancedStaticMeshComponent();
 
-	check(SpatialGridSubsystem);
 	check(SimulationSubsystem);
-	
-	bInitialized = true;
 }
 
 void AAgentsLevelBase::SpawnAgents()
 {
-	checkf(bInitialized, TEXT("AgentsSandboxLevelScript hasn't been initialized. Did you make a Init call?"));
-	
 	const float Span = SpawnConfiguration->Span;
 	const FVector Origin = SpawnConfiguration->Origin;
 	FVector SpawnLocation = Origin - FVector(Span, Span, 0.0f);
@@ -57,25 +51,25 @@ void AAgentsLevelBase::SpawnAgents()
 void AAgentsLevelBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	SimulationSubsystem->Tick(DeltaSeconds);
-	SpatialGridSubsystem->Update();
+	
+	//SimulationSubsystem->Tick(DeltaSeconds);
 	UpdateInstancedMeshes();
 }
 
 void AAgentsLevelBase::UpdateInstancedMeshes() const
 {
-	InstancedStaticMeshComponent->BatchUpdateInstancesTransforms(0, SimulationSubsystem->GetTransforms(), true, false);
-	InstancedStaticMeshComponent->BatchUpdateInstancesTransform(NumAgents - 1, 1, SimulationSubsystem->GetTransform(NumAgents - 1), true, true);
+	const TArray<FTransform>& NewTransforms = SimulationSubsystem->GetTransforms();
+	InstancedStaticMeshComponent->BatchUpdateInstancesTransforms(0, NewTransforms, true, false);
+	InstancedStaticMeshComponent->UpdateInstanceTransform(NumAgents - 1, NewTransforms.Last(), true, true);
 }
 
 void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation, const uint32 InstanceIndex) const
 {
-	SpatialGridSubsystem->RegisterAgent(SimulationSubsystem->CreateAgent(SpawnLocation));
-	
 	const FTransform& Transform = FTransform(FRotator::ZeroRotator, SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
 	InstancedStaticMeshComponent->SetMaterial(InstanceIndex, SpawnConfiguration->Material);
+
+	SimulationSubsystem->CreateAgent(SpawnLocation);
 }
 
 void AAgentsLevelBase::CreateInstancedStaticMeshComponent()
@@ -89,11 +83,7 @@ void AAgentsLevelBase::CreateInstancedStaticMeshComponent()
 
 void AAgentsLevelBase::FetchSubsystems()
 {
-	if(const UGameInstance* GameInstance = GetGameInstance())
-	{
-		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
-		SimulationSubsystem = GameInstance->GetSubsystem<USimulationSubsystem>();
-	}
+	SimulationSubsystem = GetWorld()->GetSubsystem<USimulationSubsystem>();
 }
 
 void AAgentsLevelBase::ScaleBehaviourInfluence(TSubclassOf<UBaseAutonomousBehaviour> TargetBehaviour, float Scale)

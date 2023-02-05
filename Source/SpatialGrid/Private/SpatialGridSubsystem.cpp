@@ -1,5 +1,7 @@
 #include "SpatialGrid/Public/SpatialGridSubsystem.h"
 
+#include "Chaos/DebugDrawQueue.h"
+
 void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration, TEXT("NewConfiguration cannot be null."));
@@ -18,17 +20,55 @@ void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfigur
 	}
 }
 
-void USpatialGridSubsystem::Update()
+void USpatialGridSubsystem::AddAgent(const FVector& Location)
 {
-	UpdateGrid();
+	checkf(GridAgents.Num() < GBlockSize * GBitRowSize, TEXT("Failed to add agent, maximum capacity reached."));
+	
+	FGridCellLocation GridCellLocation;
+	ConvertWorldToGridLocation(Location, GridCellLocation);
+	
+	GridAgents.Add({Location, GridCellLocation});
 }
 
-void USpatialGridSubsystem::RegisterAgent(const FGridAgent* NewAgentData)
+void USpatialGridSubsystem::UpdateSingleAgent(const uint32 AgentIndex, const FVector& NewLocation)
 {
-	GridAgents.AddUnique(NewAgentData);
+	if(!GridAgents.IsValidIndex(AgentIndex))
+	{
+		return;
+	}
+	
+	// Find array indices
+	FGridCellLocation NewGridLocation;
+	if(!ConvertWorldToGridLocation(NewLocation, NewGridLocation))
+	{
+		return;
+	}
+
+	if(NewGridLocation != GridAgents[AgentIndex].GridCellLocation)
+	{
+		RemoveIndexFromCell(AgentIndex, NewGridLocation);
+		GridAgents[AgentIndex].GridCellLocation = NewGridLocation;
+	}
+	
+	// Create AdditiveMask
+	const uint32 BlockLevel = AgentIndex / GBitRowSize;
+	const uint32 BitLocation = AgentIndex % GBitRowSize;
+	const uint64 AdditiveMask = static_cast<uint64>(1) << BitLocation;
+		
+	// Apply AdditiveMask
+	RowBlocks[NewGridLocation.X][BlockLevel] |= AdditiveMask;
+	ColumnBlocks[NewGridLocation.Y][BlockLevel] |= AdditiveMask;
 }
 
-void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const
+void USpatialGridSubsystem::UpdateAllAgents(const TArray<FVector>& NewLocations)
+{
+	for(int AgentIndex = 0; GridAgents.Num(); ++AgentIndex)
+	{
+		UpdateSingleAgent(AgentIndex, NewLocations[AgentIndex]);
+	}
+}
+
+void USpatialGridSubsystem::FindNearbyAgents(const FVector& Location, const float Radius, TArray<uint32>& Out_AgentIndices) const
 {
 	if(!GridParameters) return;
 
@@ -55,48 +95,12 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 				TArray<int> IndicesInThisCell;
 				GetIndicesInGridLocation(CurrentGridLocation, IndicesInThisCell);
 
-				Out_ActorIndices.Append(IndicesInThisCell);
+				Out_AgentIndices.Append(IndicesInThisCell);
 			}
 			CurrentGridLocation.Y += 1;
 		}
 		CurrentGridLocation.Y = StartGridLocation.Y;
 		CurrentGridLocation.X += 1;
-	}
-}
-
-void USpatialGridSubsystem::UpdateGrid()
-{
-	// This function, loops through all registered agents,
-	// fetches their world-space locations and maps them to a location on the Grid.
-	// Finally it writes new bits into the bit-blocks corresponding to said grid location,
-	// to record their presence in a particular row and column.
-	
-	ResetBlocks();
-
-	for(int AgentIndex = 0; AgentIndex < GridAgents.Num(); ++AgentIndex)
-	{
-		if(AgentIndex >= GBlockSize * GBitRowSize) break;
-
-		const FGridAgent* Agent = GridAgents[AgentIndex];
-		
-		// Find array indices
-		FGridCellLocation GridLocation;
-		if(!ConvertWorldToGridLocation(Agent->Location, GridLocation))
-		{
-			continue;
-		}
-		
-		// Create AdditiveMask
-		const uint32 BlockLevel = AgentIndex / GBitRowSize;
-		const uint32 BitLocation = AgentIndex % GBitRowSize;
-		const uint64 AdditiveMask = static_cast<uint64>(1) << BitLocation;
-
-		//const int NewIndex = BlockLevel * GBlockSize + BitLocation;
-		//check(NewIndex < GridAgents.Num());
-		
-		// Apply AdditiveMask
-		RowBlocks[GridLocation.X][BlockLevel] |= AdditiveMask;
-		ColumnBlocks[GridLocation.Y][BlockLevel] |= AdditiveMask;
 	}
 }
 
@@ -177,16 +181,19 @@ bool USpatialGridSubsystem::IsValidGridLocation(const FGridCellLocation& GridLoc
 	return RowBlocks.IsValidIndex(GridLocation.X) && ColumnBlocks.IsValidIndex(GridLocation.Y);
 }
 
-void USpatialGridSubsystem::ResetBlocks()
+void USpatialGridSubsystem::RemoveIndexFromCell(const uint32 AgentIndex, const FGridCellLocation& GridCellLocation)
 {
-	for(uint32 BlockIndex = 0; BlockIndex < NumBlocks; ++BlockIndex)
+	if(!IsValidGridLocation(GridCellLocation))
 	{
-		for(int BlockLevel = 0; BlockLevel < GBlockSize; ++BlockLevel)
-		{
-			RowBlocks[BlockIndex][BlockLevel] = 0;
-			ColumnBlocks[BlockIndex][BlockLevel] = 0;
-		}
+		return;
 	}
+
+	const uint32 BlockLevel = AgentIndex / GBitRowSize;
+	const uint32 BitLocation = AgentIndex % GBitRowSize;
+	const uint64 AndMask = ~(static_cast<uint64>(1) << BitLocation);
+
+	RowBlocks[GridCellLocation.X][BlockLevel] &= AndMask;
+	ColumnBlocks[GridCellLocation.Y][BlockLevel] &= AndMask;
 }
 
 void USpatialGridSubsystem::DrawGrid() const
@@ -218,7 +225,8 @@ void USpatialGridSubsystem::TryDrawCell(const FGridCellLocation& GridLocation) c
 	}
 	
 	FVector WorldLocation;
-	ConvertGridToWorldLocation(GridLocation, WorldLocation);
-
-	DrawDebugBox(GetWorld(),  WorldLocation, GridParameters->LookupBoxSize * FVector::One(), GridParameters->LookupBoxColor);
+	if(ConvertGridToWorldLocation(GridLocation, WorldLocation))
+	{
+		DrawDebugBox(GetWorld(),  WorldLocation, GridParameters->LookupBoxSize * FVector::One(), GridParameters->LookupBoxColor);
+	}
 }
