@@ -48,8 +48,7 @@ void USimulationSubsystem::Tick(const float DeltaTime)
 			RunSimulationLogicOnSingleAgent(Index);
 			UpdateAgent(Index, DeltaTime);
 			UpdateTransform(Index);
-		},
-		EParallelForFlags::BackgroundPriority
+		}
 	);
 }
 
