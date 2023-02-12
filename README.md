@@ -1,6 +1,5 @@
 # AutonomousAgents
- 
-Flocking behaviour model based on Craig Reynold's Algorithms for Autonomous Agents.
+ Flocking behaviour model based on Craig Reynold's Algorithms for Autonomous Agents.
 
 Features :
 1. Spatial Grid Optimization.
