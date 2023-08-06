@@ -4,6 +4,7 @@
 Features :
 1. Spatial Grid Optimization.
 2. Multithreaded.
+3. Data Oriented Design Approach.
 
 Demo :
 
