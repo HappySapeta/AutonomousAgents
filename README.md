@@ -8,7 +8,10 @@ Features :
 
 Demo :
 
+Simulating 1000 agents on the CPU at 60 FPS
+
 https://user-images.githubusercontent.com/35849508/216823564-50a420bf-397d-4016-9f15-51fadb3350b8.mp4
+
 
 Made with UE5 and love.
 
