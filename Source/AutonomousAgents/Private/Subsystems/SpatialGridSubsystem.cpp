@@ -9,8 +9,8 @@ void USpatialGridSubsystem::InitializeGrid(const UGridConfiguration* NewConfigur
 	NumBlocks = GridParameters->Resolution; 
 	GridAgents.Reserve(GBlockSize * GBitRowSize);
 
-	RowBlocks.Init(FBitBlock(), NumBlocks);
-	ColumnBlocks.Init(FBitBlock(), NumBlocks);
+	RowBlocks.Init(FRpBitBlock(), NumBlocks);
+	ColumnBlocks.Init(FRpBitBlock(), NumBlocks);
 
 	if(GridParameters->bDrawGrid)
 	{
@@ -28,22 +28,25 @@ void USpatialGridSubsystem::RegisterAgent(const UAgent* NewAgentData)
 	GridAgents.AddUnique(NewAgentData);
 }
 
-void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const
+void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Radius, TStaticArray<int32, 16>& Out_ActorIndices, uint32& Out_NumIndices) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USpatialGridSubsystem::SearchActors)
 	if(!GridParameters) return;
 
 	const int Reach = FMath::FloorToInt(Radius / GridParameters->Range.Size<float>() * GridParameters->Resolution);
 
-	FGridCellLocation SearchGridLocation;
+	FRpSpatialCellLocation SearchGridLocation;
 	if(!ConvertWorldToGridLocation(Location, SearchGridLocation))
 	{
 		return;
 	}
 	
-	const FGridCellLocation& StartGridLocation = FGridCellLocation(SearchGridLocation.X - Reach, SearchGridLocation.Y - Reach);
-	const FGridCellLocation& EndGridLocation = FGridCellLocation(SearchGridLocation.X + Reach, SearchGridLocation.Y + Reach);
-
-	FGridCellLocation CurrentGridLocation = StartGridLocation;
+	const FRpSpatialCellLocation& StartGridLocation = FRpSpatialCellLocation(SearchGridLocation.X - Reach, SearchGridLocation.Y - Reach);
+	const FRpSpatialCellLocation& EndGridLocation = FRpSpatialCellLocation(SearchGridLocation.X + Reach, SearchGridLocation.Y + Reach);
+	
+	Out_NumIndices = 0;
+	
+	FRpSpatialCellLocation CurrentGridLocation = StartGridLocation;
 	while(CurrentGridLocation.X <= EndGridLocation.X)
 	{
 		while(CurrentGridLocation.Y <= EndGridLocation.Y)
@@ -51,11 +54,11 @@ void USpatialGridSubsystem::SearchActors(const FVector& Location, const float Ra
 			if(IsValidGridLocation(CurrentGridLocation))
 			{
 				TryDrawCell(CurrentGridLocation);
-				
-				TArray<int> IndicesInThisCell;
-				GetIndicesInGridLocation(CurrentGridLocation, IndicesInThisCell);
-
-				Out_ActorIndices.Append(IndicesInThisCell);
+				GetIndicesInGridLocation(CurrentGridLocation, Out_ActorIndices, Out_NumIndices);
+				if(Out_NumIndices >= 16)
+				{
+					return;
+				}
 			}
 			CurrentGridLocation.Y += 1;
 		}
@@ -80,7 +83,7 @@ void USpatialGridSubsystem::UpdateGrid()
 		const UAgent* Agent = GridAgents[AgentIndex];
 		
 		// Find array indices
-		FGridCellLocation GridLocation;
+		FRpSpatialCellLocation GridLocation;
 		if(!ConvertWorldToGridLocation(Agent->Location, GridLocation))
 		{
 			continue;
@@ -100,14 +103,15 @@ void USpatialGridSubsystem::UpdateGrid()
 	}
 }
 
-void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const
+void USpatialGridSubsystem::GetIndicesInGridLocation(const FRpSpatialCellLocation& GridLocation, TStaticArray<int32, 16>& Out_Indices, uint32& Out_NumIndices) const
 {
-	if(!IsValidGridLocation(GridLocation))
+	TRACE_CPUPROFILER_EVENT_SCOPE(USpatialGridSubsystem::GetIndicesInGridLocation)
+	if(Out_NumIndices >= 16 || !IsValidGridLocation(GridLocation))
 	{
 		return;
 	}
 
-	Out_Indices.Reset();
+	uint32 Index = Out_NumIndices;
 	for(uint32 BlockLevel = 0; BlockLevel < GBlockSize; ++BlockLevel)
 	{
 		const uint64 IndicesInThisBlock = RowBlocks[GridLocation.X][BlockLevel] & ColumnBlocks[GridLocation.Y][BlockLevel];
@@ -117,13 +121,20 @@ void USpatialGridSubsystem::GetIndicesInGridLocation(const FGridCellLocation& Gr
 			const uint64 FilteredBlock = IndicesInThisBlock & (static_cast<uint64>(1) << BitLocation);
 			if(FilteredBlock != 0)
 			{
-				Out_Indices.Add(BlockLevel * GBitRowSize + BitLocation);
+				Out_Indices[Index] = BlockLevel * GBitRowSize + BitLocation;
+				++Index;
+				++Out_NumIndices;
+
+				if(Out_NumIndices >= 16)
+				{
+					return;
+				}
 			}
 		}
 	}
 }
 
-bool USpatialGridSubsystem::ConvertWorldToGridLocation(FVector WorldLocation, FGridCellLocation& Out_GridLocation) const
+bool USpatialGridSubsystem::ConvertWorldToGridLocation(FVector WorldLocation, FRpSpatialCellLocation& Out_GridLocation) const
 {
 	if(!GridParameters || !IsValidWorldLocation(WorldLocation))
 	{
@@ -141,7 +152,7 @@ bool USpatialGridSubsystem::ConvertWorldToGridLocation(FVector WorldLocation, FG
 	return true;
 }
 
-bool USpatialGridSubsystem::ConvertGridToWorldLocation(const FGridCellLocation& GridLocation, FVector& Out_WorldLocation) const
+bool USpatialGridSubsystem::ConvertGridToWorldLocation(const FRpSpatialCellLocation& GridLocation, FVector& Out_WorldLocation) const
 {
 	if(!IsValidGridLocation(GridLocation))
 	{
@@ -172,7 +183,7 @@ bool USpatialGridSubsystem::IsValidWorldLocation(const FVector& WorldLocation) c
 	return GridParameters->Range.Contains(WorldLocation.X) && GridParameters->Range.Contains(WorldLocation.Y);
 }
 
-bool USpatialGridSubsystem::IsValidGridLocation(const FGridCellLocation& GridLocation) const
+bool USpatialGridSubsystem::IsValidGridLocation(const FRpSpatialCellLocation& GridLocation) const
 {
 	return RowBlocks.IsValidIndex(GridLocation.X) && ColumnBlocks.IsValidIndex(GridLocation.Y);
 }
@@ -210,7 +221,7 @@ void USpatialGridSubsystem::DrawGrid() const
 	}
 }
 
-void USpatialGridSubsystem::TryDrawCell(const FGridCellLocation& GridLocation) const
+void USpatialGridSubsystem::TryDrawCell(const FRpSpatialCellLocation& GridLocation) const
 {
 	if(!GridParameters->bDebugLookup || !IsValidGridLocation(GridLocation))
 	{

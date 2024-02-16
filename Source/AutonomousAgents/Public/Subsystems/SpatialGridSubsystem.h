@@ -17,16 +17,9 @@ constexpr int GBitRowSize = 64;
 constexpr int GBlockSize = 100;
 
 // Represents a location on the grid in terms of Column and Row Indices.
-USTRUCT()
-struct FGridCellLocation
+struct FRpSpatialCellLocation
 {
-	GENERATED_BODY()
-	
-	FGridCellLocation()
-		: X(0), Y(0)
-	{}
-	
-	FGridCellLocation(const int XIndex, const int YIndex)
+	FRpSpatialCellLocation(const int XIndex = 0, const int YIndex = 0)
 		: X(XIndex), Y(YIndex)
 	{}
 	
@@ -35,12 +28,9 @@ struct FGridCellLocation
 };
 
 // Wrapper over an Array of 64-bit Integers.
-USTRUCT()
-struct FBitBlock
+struct FRpBitBlock
 {
-	GENERATED_BODY();
-	
-	FBitBlock()
+	FRpBitBlock()
 	{
 		BitRow.Init(0, GBlockSize);
 	}
@@ -102,7 +92,7 @@ public:
 	 * @param Radius Radius of the search region.
 	 * @param Out_ActorIndices Output vector of indices of agents that were found.
 	 */
-	void SearchActors(const FVector& Location, const float Radius, TArray<uint32>& Out_ActorIndices) const;
+	void SearchActors(const FVector& Location, const float Radius, TStaticArray<int32, 16>& Out_ActorIndices, uint32& Out_NumIndices) const;
 
 	/**
 	 * @brief Draws lines in the world space to visualize the grid.
@@ -113,7 +103,7 @@ public:
 	 * @brief Highlights a valid cell in the grid.
 	 * @param GridLocation GridLocation in terms of Row and Column Indices.
 	 */
-	void TryDrawCell(const FGridCellLocation& GridLocation) const;
+	void TryDrawCell(const FRpSpatialCellLocation& GridLocation) const;
 
 protected:
 	
@@ -122,19 +112,19 @@ protected:
 	 * @param GridLocation Location of the cell in the Grid.
 	 * @param Out_Indices Output vector of indices of agents that were found.
 	 */
-	virtual void GetIndicesInGridLocation(const FGridCellLocation& GridLocation, TArray<int>& Out_Indices) const;
+	virtual void GetIndicesInGridLocation(const FRpSpatialCellLocation& GridLocation, TStaticArray<int32, 16>& Out_Indices, uint32& Out_NumIndices) const;
 
 	// Converts world-space location to a location of a cell in the grid.
-	bool ConvertWorldToGridLocation(FVector WorldLocation, FGridCellLocation& Out_GridLocation) const;
+	bool ConvertWorldToGridLocation(FVector WorldLocation, FRpSpatialCellLocation& Out_GridLocation) const;
 
 	// Converts a location of a cell in the grid to a world-space location.
-	bool ConvertGridToWorldLocation(const FGridCellLocation& GridLocation, FVector& Out_WorldLocation) const;
+	bool ConvertGridToWorldLocation(const FRpSpatialCellLocation& GridLocation, FVector& Out_WorldLocation) const;
 
 	// Checks if a given world-space location lies within the bounds of the grid. 
 	virtual bool IsValidWorldLocation(const FVector& WorldLocation) const;
 
 	// Checks if a given grid location has indices that lie within the bounds of block arrays.
-	virtual bool IsValidGridLocation(const FGridCellLocation& GridLocation) const;
+	virtual bool IsValidGridLocation(const FRpSpatialCellLocation& GridLocation) const;
 
 	// Fills all block arrays with 0s.
 	virtual void ResetBlocks();
@@ -169,12 +159,12 @@ protected:
 	const UGridConfiguration* GridParameters;
 
 	// An array of BitBlocks (stack of 64-bit integers) that register indices of agents based on their X-Coordinate.
-	TArray<FBitBlock> RowBlocks;
+	TArray<FRpBitBlock> RowBlocks;
 	
 	/**
 	* An array of BitBlocks (stack of 64-bit integers) that register
 	* indices of agents based on their Y-Coordinate. Each dimension has its own array of BitBlocks.
 	* The current implementation of the SpatialGrid supports two dimensions (X & Y) only.
 	*/
-	TArray<FBitBlock> ColumnBlocks;
+	TArray<FRpBitBlock> ColumnBlocks;
 };

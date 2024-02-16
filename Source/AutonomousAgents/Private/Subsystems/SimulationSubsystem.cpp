@@ -40,6 +40,7 @@ void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 // TODO : I need to find a way to run the loop without relying on Tick.
 void USimulationSubsystem::Tick(const float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::Tick)
 	ParallelFor
 	(
 		AgentsData.Num(),
@@ -84,6 +85,7 @@ FTransform USimulationSubsystem::GetTransform(const uint32 AgentIndex) const
 
 void USimulationSubsystem::UpdateTransform(const uint32 AgentIndex)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::UpdateTransform)
 	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(AgentsData[AgentIndex]->Velocity.GetSafeNormal());
 	const FVector& Location = AgentsData[AgentIndex]->Location;
 	
@@ -103,6 +105,7 @@ void USimulationSubsystem::RunSimulationLogicOnSingleAgent(const uint32 AgentInd
 
 void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::ApplyBehaviourOnAgent)
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 
 	FVector MovementForce = FVector::ZeroVector;
@@ -133,21 +136,25 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
 {
 	UAgent* TargetAgent = AgentsData[AgentIndex];
-	TargetAgent->NearbyAgentIndices.Reset();
-	if (SpatialGrid)
+
+	TargetAgent->NumNearbyAgents = 0;
+	for(int32& Index : TargetAgent->NearbyAgentIndices)
 	{
-		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices);
+		Index = -1;
 	}
+	SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices, TargetAgent->NumNearbyAgents);
 }
 
 void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float DeltaSeconds)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::UpdateAgent)
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 	TargetAgent->UpdateState(DeltaSeconds);
 }
 
 bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::ShouldAgentFlock)
 	if (Configuration->bForceLeadership)
 	{
 		return true;
@@ -160,8 +167,13 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 	const float HalfFOV = Configuration->LeaderCheckParameters.FOVHalfAngle;
 
 	uint32 NumAgentsFound = 0;
-	for (const uint32 OtherAgentIndex : TargetAgent->NearbyAgentIndices)
+	for (const int32 OtherAgentIndex : TargetAgent->NearbyAgentIndices)
 	{
+		if(OtherAgentIndex == -1)
+		{
+			break;
+		}
+		
 		const UAgent* OtherAgent = AgentsData[OtherAgentIndex];
 		if (Utility::IsPointInFOV(
 			TargetAgent->Location, TargetAgent->GetForwardVector(), OtherAgent->Location,

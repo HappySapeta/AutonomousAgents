@@ -3,6 +3,7 @@
 
 FVector UCohesionBehaviour::CalculateSteerForce(const UAgent* AgentData, const TArray<UAgent*>& OtherActors, const float MaxSpeed) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UCohesionBehaviour::CalculateSteerForce)
 	if (!bIsEnabled)
 	{
 		return FVector::ZeroVector;
@@ -12,8 +13,13 @@ FVector UCohesionBehaviour::CalculateSteerForce(const UAgent* AgentData, const T
 	FVector HerdLocation = FVector::ZeroVector;
 	uint32 NumCohesiveAgents = 0;
 
-	for (const uint32 Index : AgentData->NearbyAgentIndices)
+	for (int32 Index : AgentData->NearbyAgentIndices)
 	{
+		if(Index == -1)
+		{
+			break;
+		}
+		
 		const UAgent* OtherAgent = OtherActors[Index];
 		if (!CanOtherAgentAffect(AgentData, OtherAgent))
 		{
