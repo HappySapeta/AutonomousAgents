@@ -1,12 +1,10 @@
 ﻿#include "Subsystems/SimulationSubsystem.h"
-#include "Subsystems/SpatialGridSubsystem.h"
 
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
 #include "Behaviours/Base/SeekingInterface.h"
 
-#include <Kismet/KismetMathLibrary.h>
-#include <Kismet/GameplayStatics.h>
+#include "Kismet/KismetMathLibrary.h"
 
 #include "Common/Utility.h"
 #include "Configuration/SimulatorConfiguration.h"
@@ -30,10 +28,7 @@ void USimulationSubsystem::ResetInfluences() const
 void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
-
 	Configuration = NewConfiguration;
-	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
-
 	ResetInfluences();
 }
 
@@ -142,7 +137,7 @@ void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
 	{
 		Index = -1;
 	}
-	SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices, TargetAgent->NumNearbyAgents);
+	ImplicitGrid.Search(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices, TargetAgent->NumNearbyAgents);
 }
 
 void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float DeltaSeconds)
