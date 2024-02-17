@@ -13,14 +13,11 @@ FVector UCohesionBehaviour::CalculateSteerForce(const UAgent* AgentData, const T
 	FVector HerdLocation = FVector::ZeroVector;
 	uint32 NumCohesiveAgents = 0;
 
-	for (int32 Index : AgentData->NearbyAgentIndices)
+	const uint32 NumNearbyAgents = AgentData->NumNearbyAgents;
+	const FRpGridSearchResult& NearbyAgents = AgentData->NearbyAgentIndices;
+	for (uint32 Index = 0; Index < NumNearbyAgents; ++Index)
 	{
-		if(Index == -1)
-		{
-			break;
-		}
-		
-		const UAgent* OtherAgent = OtherActors[Index];
+		const UAgent* OtherAgent = OtherActors[NearbyAgents[Index]];
 		if (!CanOtherAgentAffect(AgentData, OtherAgent))
 		{
 			continue;

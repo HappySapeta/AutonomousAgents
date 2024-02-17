@@ -136,4 +136,6 @@ private:
 		
 	// Array that contains Transform information of all agents.
 	TArray<FTransform> AgentTransforms;
+
+	TSharedPtr<TArray<FVector>> Positions;
 };

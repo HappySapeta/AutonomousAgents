@@ -69,6 +69,7 @@ void AAgentsLevelBase::UpdateInstancedMeshes() const
 void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation, const uint32 InstanceIndex) const
 {
 	const FTransform& Transform = FTransform(FRotator::ZeroRotator, SpawnLocation);
+	SimulationSubsystem->CreateAgent(SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
 	InstancedStaticMeshComponent->SetMaterial(InstanceIndex, SpawnConfiguration->Material);
 }

@@ -2,6 +2,7 @@
 
 #include <CoreMinimal.h>
 #include "Configuration/SearchParameters.h"
+#include "Engine/DataAsset.h"
 #include "SimulatorConfiguration.generated.h"
 
 // Forward declarations.
