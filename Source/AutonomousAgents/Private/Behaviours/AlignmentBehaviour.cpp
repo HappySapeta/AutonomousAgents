@@ -5,6 +5,7 @@
 
 FVector UAlignmentBehaviour::CalculateSteerForce(const UAgent* AffectedAgentData, const TArray<UAgent*>& OtherAgents, const float MaxSpeed) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UAlignmentBehaviour::CalculateSteerForce)
 	if (!bIsEnabled)
 	{
 		return FVector::ZeroVector;
@@ -14,9 +15,11 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const UAgent* AffectedAgentData
 	FVector AverageFlockVelocity = FVector::ZeroVector;
 	uint32 NumAlignmentAgents = 0;
 
-	for (const uint32 Index : AffectedAgentData->NearbyAgentIndices)
+	const uint32 NumNearbyAgents = AffectedAgentData->NumNearbyAgents;
+	const FRpGridSearchResult& NearbyAgents = AffectedAgentData->NearbyAgentIndices;
+	for (uint32 Index = 0; Index < NumNearbyAgents; ++Index)
 	{
-		const UAgent* OtherAgent = OtherAgents[Index];
+		const UAgent* OtherAgent = OtherAgents[NearbyAgents[Index]];
 		if (!CanOtherAgentAffect(AffectedAgentData, OtherAgent))
 		{
 			continue;

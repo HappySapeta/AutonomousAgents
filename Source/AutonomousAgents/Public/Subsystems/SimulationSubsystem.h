@@ -1,13 +1,12 @@
 ﻿#pragma once
 
-#include <CoreMinimal.h>
-
+#include "CoreMinimal.h"
 #include "Core/Agent.h"
+#include "SpatialAcceleration/RpImplicitGrid.h"
 #include "SimulationSubsystem.generated.h"
 
 // Forward declarations.
 class USimulatorConfiguration;
-class USpatialGridSubsystem;
 
 /**
  * Runs core simulation logic and drives all agents.
@@ -129,8 +128,7 @@ private:
 	* @brief Reference to the USpatialGridSubsystem, a system that maintains an implicit grid,
 	* for finding agents in a region, very quickly. 
 	*/
-	UPROPERTY(Transient)
-	USpatialGridSubsystem* SpatialGrid;
+	FRpImplicitGrid ImplicitGrid;
 
 	// Contains data about all agents currently being simulated.
 	UPROPERTY(Transient)
@@ -138,4 +136,6 @@ private:
 		
 	// Array that contains Transform information of all agents.
 	TArray<FTransform> AgentTransforms;
+
+	TSharedPtr<TArray<FVector>> Positions;
 };

@@ -1,12 +1,10 @@
 ﻿#include "Subsystems/SimulationSubsystem.h"
-#include "Subsystems/SpatialGridSubsystem.h"
 
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Behaviours/Base/FlockingInterface.h"
 #include "Behaviours/Base/SeekingInterface.h"
 
-#include <Kismet/KismetMathLibrary.h>
-#include <Kismet/GameplayStatics.h>
+#include "Kismet/KismetMathLibrary.h"
 
 #include "Common/Utility.h"
 #include "Configuration/SimulatorConfiguration.h"
@@ -30,16 +28,26 @@ void USimulationSubsystem::ResetInfluences() const
 void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
-
+	Positions = MakeShared<TArray<FVector>>();
+	ImplicitGrid(FFloatRange(-2000.0f, 2000.0f), 10);
+	ImplicitGrid.SetPositionsArray(Positions);
 	Configuration = NewConfiguration;
-	SpatialGrid = GetGameInstance()->GetSubsystem<USpatialGridSubsystem>();
-
 	ResetInfluences();
 }
 
 // TODO : I need to find a way to run the loop without relying on Tick.
 void USimulationSubsystem::Tick(const float DeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::Tick)
+
+	static bool bIsGridDrawn = false;
+	if(!bIsGridDrawn)
+	{
+		ImplicitGrid.DrawDebugGrid(GetWorld());
+		bIsGridDrawn = true;
+	}
+	
+	ImplicitGrid.Update();
 	ParallelFor
 	(
 		AgentsData.Num(),
@@ -63,6 +71,8 @@ UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const 
 	NewAgent->Velocity = InitialVelocity;
 	NewAgent->SetVelocityAlignmentSpeed(Configuration->VelocityAlignmentSpeed);
 
+	Positions->Push(InitialLocation);
+	
 	return NewAgent;
 }
 
@@ -84,6 +94,7 @@ FTransform USimulationSubsystem::GetTransform(const uint32 AgentIndex) const
 
 void USimulationSubsystem::UpdateTransform(const uint32 AgentIndex)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::UpdateTransform)
 	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(AgentsData[AgentIndex]->Velocity.GetSafeNormal());
 	const FVector& Location = AgentsData[AgentIndex]->Location;
 	
@@ -103,6 +114,7 @@ void USimulationSubsystem::RunSimulationLogicOnSingleAgent(const uint32 AgentInd
 
 void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::ApplyBehaviourOnAgent)
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 
 	FVector MovementForce = FVector::ZeroVector;
@@ -133,21 +145,22 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
 {
 	UAgent* TargetAgent = AgentsData[AgentIndex];
-	TargetAgent->NearbyAgentIndices.Reset();
-	if (SpatialGrid)
-	{
-		SpatialGrid->SearchActors(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices);
-	}
+
+	TargetAgent->NumNearbyAgents = 0;
+	ImplicitGrid.Search(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices, TargetAgent->NumNearbyAgents);
 }
 
 void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float DeltaSeconds)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::UpdateAgent)
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 	TargetAgent->UpdateState(DeltaSeconds);
+	Positions.Get()->operator[](AgentIndex) = TargetAgent->Location;
 }
 
 bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::ShouldAgentFlock)
 	if (Configuration->bForceLeadership)
 	{
 		return true;
@@ -160,12 +173,21 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 	const float HalfFOV = Configuration->LeaderCheckParameters.FOVHalfAngle;
 
 	uint32 NumAgentsFound = 0;
-	for (const uint32 OtherAgentIndex : TargetAgent->NearbyAgentIndices)
+	const uint32 NumNearbyAgents = TargetAgent->NumNearbyAgents;
+	const FRpGridSearchResult& NearbyAgents = TargetAgent->NearbyAgentIndices;
+	for (uint32 Index = 0; Index < NumNearbyAgents; ++Index)
 	{
-		const UAgent* OtherAgent = AgentsData[OtherAgentIndex];
-		if (Utility::IsPointInFOV(
-			TargetAgent->Location, TargetAgent->GetForwardVector(), OtherAgent->Location,
-			LeadershipCheck_MinimumValue, LeadershipCheck_MaximumValue, HalfFOV))
+		const UAgent* OtherAgent = AgentsData[NearbyAgents[Index]];
+		if (Utility::IsPointInFOV
+				(
+					TargetAgent->Location,
+					TargetAgent->GetForwardVector(),
+					OtherAgent->Location,
+					LeadershipCheck_MinimumValue, 
+					LeadershipCheck_MaximumValue,
+					HalfFOV
+				)
+			)
 		{
 			++NumAgentsFound;
 		}

@@ -1,6 +1,5 @@
 #include "Level/AgentsLevelBase.h"
 #include "Configuration/SpawnConfiguration.h"
-#include "Subsystems/SpatialGridSubsystem.h"
 #include "Behaviours/Base/BaseAutonomousBehaviour.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Subsystems/SimulationSubsystem.h"
@@ -18,7 +17,6 @@ void AAgentsLevelBase::Init(const USpawnConfiguration* NewSpawnConfiguration)
 	FetchSubsystems();
 	CreateInstancedStaticMeshComponent();
 
-	check(SpatialGridSubsystem);
 	check(SimulationSubsystem);
 	
 	bInitialized = true;
@@ -59,7 +57,6 @@ void AAgentsLevelBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	SimulationSubsystem->Tick(DeltaSeconds);
-	SpatialGridSubsystem->Update();
 	UpdateInstancedMeshes();
 }
 
@@ -71,9 +68,8 @@ void AAgentsLevelBase::UpdateInstancedMeshes() const
 
 void AAgentsLevelBase::SpawnSingleAgent(FVector SpawnLocation, const uint32 InstanceIndex) const
 {
-	SpatialGridSubsystem->RegisterAgent(SimulationSubsystem->CreateAgent(SpawnLocation));
-	
 	const FTransform& Transform = FTransform(FRotator::ZeroRotator, SpawnLocation);
+	SimulationSubsystem->CreateAgent(SpawnLocation);
 	InstancedStaticMeshComponent->AddInstance(Transform);
 	InstancedStaticMeshComponent->SetMaterial(InstanceIndex, SpawnConfiguration->Material);
 }
@@ -91,7 +87,6 @@ void AAgentsLevelBase::FetchSubsystems()
 {
 	if(const UGameInstance* GameInstance = GetGameInstance())
 	{
-		SpatialGridSubsystem = GameInstance->GetSubsystem<USpatialGridSubsystem>();
 		SimulationSubsystem = GameInstance->GetSubsystem<USimulationSubsystem>();
 	}
 }

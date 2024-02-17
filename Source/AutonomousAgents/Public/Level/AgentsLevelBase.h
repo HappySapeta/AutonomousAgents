@@ -7,7 +7,6 @@
 
 // Forward declarations.
 class USimulationSubsystem;
-class USpatialGridSubsystem; 
 
 /**
  * AgentsLevelBase is a Level Script Actor
@@ -89,9 +88,6 @@ private:
 	void CreateInstancedStaticMeshComponent();
 
 protected:
-
-	UPROPERTY(Transient)
-	USpatialGridSubsystem* SpatialGridSubsystem;
 
 	UPROPERTY(Transient)
 	USimulationSubsystem* SimulationSubsystem;

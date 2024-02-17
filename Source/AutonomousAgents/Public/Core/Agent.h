@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "SpatialAcceleration/RpImplicitGrid.h"
 #include "Agent.generated.h"
 
 /**
@@ -30,7 +31,8 @@ public:
 
 public:
 	
-	TArray<uint32> NearbyAgentIndices;
+	FRpGridSearchResult NearbyAgentIndices;
+	uint32 NumNearbyAgents = 0; 
 	FVector Location = FVector::ZeroVector;
 	FVector Velocity = FVector::ZeroVector;
 	FVector MovementForce = FVector::ZeroVector;

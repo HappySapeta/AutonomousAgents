@@ -1,0 +1,3 @@
+[submodule "Plugins/Ripple"]
+	path = Plugins/Ripple
+	url = https://github.com/AnupamSahu/Ripple
