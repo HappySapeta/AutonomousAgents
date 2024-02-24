@@ -9,6 +9,8 @@
 #include "Common/Utility.h"
 #include "Configuration/SimulatorConfiguration.h"
 
+//#define FORCE_SINGLE_THREAD
+
 // TODO: This is a temporary patch to a problem where we can't prevent CDOs from serializing certain variables. This function shouldn't exist.
 void USimulationSubsystem::ResetInfluences() const
 {
@@ -29,8 +31,7 @@ void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
 	Positions = MakeShared<TArray<FVector>>();
-	ImplicitGrid(FFloatRange(-2000.0f, 2000.0f), 10);
-	ImplicitGrid.SetPositionsArray(Positions);
+	ImplicitGrid.Initialize(FFloatRange(-2000.0f, 2000.0f), 10, Positions);
 	Configuration = NewConfiguration;
 	ResetInfluences();
 }
@@ -48,6 +49,15 @@ void USimulationSubsystem::Tick(const float DeltaTime)
 	}
 	
 	ImplicitGrid.Update();
+
+#ifdef FORCE_SINGLE_THREAD
+	for(int32 Index = 0; Index < AgentsData.Num(); ++Index)
+	{
+		RunSimulationLogicOnSingleAgent(Index);
+		UpdateAgent(Index, DeltaTime);
+		UpdateTransform(Index);
+	}
+#else
 	ParallelFor
 	(
 		AgentsData.Num(),
@@ -58,6 +68,7 @@ void USimulationSubsystem::Tick(const float DeltaTime)
 			UpdateTransform(Index);
 		}
 	);
+#endif
 }
 
 UAgent* USimulationSubsystem::CreateAgent(const FVector& InitialLocation, const FVector& InitialVelocity)
@@ -118,7 +129,7 @@ void USimulationSubsystem::ApplyBehaviourOnAgent(const uint32 AgentIndex) const
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 
 	FVector MovementForce = FVector::ZeroVector;
-	if (ShouldAgentFlock(AgentIndex))
+	if (!ShouldAgentFlock(AgentIndex))
 	{
 		for (const TSubclassOf<UBaseAutonomousBehaviour>& Behaviour : Configuration->ChaseBehaviors)
 		{
@@ -147,7 +158,8 @@ void USimulationSubsystem::SenseNearbyAgents(const uint32 AgentIndex) const
 	UAgent* TargetAgent = AgentsData[AgentIndex];
 
 	TargetAgent->NumNearbyAgents = 0;
-	ImplicitGrid.Search(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices, TargetAgent->NumNearbyAgents);
+	TargetAgent->NearbyAgentIndices.Reset();
+	ImplicitGrid.RadialSearch(TargetAgent->Location, Configuration->AgentSenseRange, TargetAgent->NearbyAgentIndices);
 }
 
 void USimulationSubsystem::UpdateAgent(const uint32 AgentIndex, const float DeltaSeconds)
@@ -163,7 +175,7 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 	TRACE_CPUPROFILER_EVENT_SCOPE(USimulationSubsystem::ShouldAgentFlock)
 	if (Configuration->bForceLeadership)
 	{
-		return true;
+		return false;
 	}
 
 	UAgent* TargetAgent = AgentsData[AgentIndex];
@@ -172,12 +184,15 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 	const float LeadershipCheck_MinimumValue = Configuration->LeaderCheckParameters.SearchRadius.GetLowerBoundValue();
 	const float HalfFOV = Configuration->LeaderCheckParameters.FOVHalfAngle;
 
-	uint32 NumAgentsFound = 0;
-	const uint32 NumNearbyAgents = TargetAgent->NumNearbyAgents;
-	const FRpGridSearchResult& NearbyAgents = TargetAgent->NearbyAgentIndices;
-	for (uint32 Index = 0; Index < NumNearbyAgents; ++Index)
+	const FRpSearchResults& NearbyAgents = TargetAgent->NearbyAgentIndices;
+	uint8 Count = NearbyAgents.Num();
+	for(auto Itr = NearbyAgents.Array.begin(); Count > 0; --Count, ++Itr)
 	{
-		const UAgent* OtherAgent = AgentsData[NearbyAgents[Index]];
+		const UAgent* OtherAgent = AgentsData[*Itr];
+		if(ensureMsgf(GetWorld(), TEXT("World not found!")))
+		{
+			//DrawDebugLine(GetWorld(), TargetAgent->Location, OtherAgent->Location, FColor::White, false);
+		}
 		if (Utility::IsPointInFOV
 				(
 					TargetAgent->Location,
@@ -189,10 +204,9 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 				)
 			)
 		{
-			++NumAgentsFound;
+			return true;
 		}
 	}
 
-	// If this Agent cannot see any other agents in its view cone, it cannot flock other agents and should rather chase a target.
-	return NumAgentsFound == 0;
+	return false;
 }

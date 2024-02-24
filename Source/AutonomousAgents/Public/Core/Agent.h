@@ -31,7 +31,7 @@ public:
 
 public:
 	
-	FRpGridSearchResult NearbyAgentIndices;
+	FRpSearchResults NearbyAgentIndices;
 	uint32 NumNearbyAgents = 0; 
 	FVector Location = FVector::ZeroVector;
 	FVector Velocity = FVector::ZeroVector;

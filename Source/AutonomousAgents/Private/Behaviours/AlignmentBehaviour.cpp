@@ -15,11 +15,11 @@ FVector UAlignmentBehaviour::CalculateSteerForce(const UAgent* AffectedAgentData
 	FVector AverageFlockVelocity = FVector::ZeroVector;
 	uint32 NumAlignmentAgents = 0;
 
-	const uint32 NumNearbyAgents = AffectedAgentData->NumNearbyAgents;
-	const FRpGridSearchResult& NearbyAgents = AffectedAgentData->NearbyAgentIndices;
-	for (uint32 Index = 0; Index < NumNearbyAgents; ++Index)
+	const FRpSearchResults& NearbyAgents = AffectedAgentData->NearbyAgentIndices;
+	uint8 Count = NearbyAgents.Num();
+	for(auto Itr = NearbyAgents.Array.begin(); Count > 0; --Count, ++Itr)
 	{
-		const UAgent* OtherAgent = OtherAgents[NearbyAgents[Index]];
+		const UAgent* OtherAgent = OtherAgents[*Itr];
 		if (!CanOtherAgentAffect(AffectedAgentData, OtherAgent))
 		{
 			continue;

@@ -6,7 +6,7 @@ constexpr uint32 GNearbyAgentsSize = 100;
 
 UAgent::UAgent()
 {
-	memset(NearbyAgentIndices.GetData(), 0, sizeof(NearbyAgentIndices));
+	NearbyAgentIndices.Reset();
 }
 
 FVector UAgent::GetForwardVector() const
