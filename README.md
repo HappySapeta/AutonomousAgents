@@ -1,11 +1,6 @@
 # AutonomousAgents
  Flocking behaviour model based on Craig Reynold's Algorithms for Autonomous Agents.
 
-Features :
-1. Spatial Grid Optimization.
-2. Multithreaded.
-3. Data Oriented Design Approach.
-
 Demo :
 
 Simulating 1000 agents on the CPU at 60 FPS
