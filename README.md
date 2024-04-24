@@ -4,9 +4,9 @@ A Flocking Simulation Model using Craig Reynold's Algorithms for Steering Behavi
 Flocking simulations often appear in nature, such as Schools of Fish or Murmurations of Birds, that create an illusion of a massive, sentient being.
 Such simulations are often used in video games to add life to the game world.
 
-This project was developed with the aim of mimicking these amazing creations with simple algorithms and making the best use of available resources.
+This project was developed to mimic these amazing creations with simple algorithms and make the best use of available resources.
 
-### Development
+### Development Stories
 
 * Thanks to Craig Reynold's genius, there was no struggle in creating intelligent-looking agents.
 The real challenge was making the best use of the resources and simulating at respectable framerates.
@@ -31,9 +31,15 @@ ISMCs replaced actors and eliminated the need to perform physics-based tests.
 It compared the distances of each agent against every other agent to filter the ones that lay within the range of influence.
 This naive approach resulted in a quadratic time algorithm that exhausted the CPU with just over 100 agents.
 
-* This led to the final step in increasing performance by using a spatial acceleration structure.
+* This led to the next step in increasing performance by using a spatial acceleration structure.
 For this simulation, a Binary Implicit Grid was used. This acceleration structure divides the simulation space
 into equally sized sections and allows a constant time lookup of any section.
+
+* Finally, another significant reduction in frame time was done by utilizing multiple threads.
+Unreal offers several techniques to implement multi-threading. This project employs the simplest of these techniques, called a ParallelFor loop.
+A ParallelFor prevents the game-thread from staying busy for long periods.
+Quoting Unreal's Official Documentation -
+`General purpose parallel for that uses the taskgraph for unbalanced tasks Offers better work distribution among threads at the cost of a little bit more synchronization.`
   
 
 ### Simulating 1000 agents on the CPU at 60 FPS
