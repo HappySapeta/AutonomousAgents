@@ -31,7 +31,7 @@ void USimulationSubsystem::Init(USimulatorConfiguration* NewConfiguration)
 {
 	checkf(NewConfiguration != nullptr, TEXT("Simulation Configuration cannot be null."));
 	Positions = MakeShared<TArray<FVector>>();
-	ImplicitGrid.Initialize(FFloatRange(-2000.0f, 2000.0f), 10, Positions);
+	ImplicitGrid.Initialize(FFloatRange(-2000.0f, 2000.0f), 10);
 	Configuration = NewConfiguration;
 	ResetInfluences();
 }
@@ -44,11 +44,11 @@ void USimulationSubsystem::Tick(const float DeltaTime)
 	static bool bIsGridDrawn = false;
 	if(!bIsGridDrawn)
 	{
-		ImplicitGrid.DrawDebugGrid(GetWorld());
+		ImplicitGrid.DrawDebug(GetWorld(), DeltaTime);
 		bIsGridDrawn = true;
 	}
 	
-	ImplicitGrid.Update();
+	ImplicitGrid.Update(*Positions);
 
 #ifdef FORCE_SINGLE_THREAD
 	for(int32 Index = 0; Index < AgentsData.Num(); ++Index)
@@ -186,7 +186,7 @@ bool USimulationSubsystem::ShouldAgentFlock(const uint32 AgentIndex) const
 
 	const FRpSearchResults& NearbyAgents = TargetAgent->NearbyAgentIndices;
 	uint8 Count = NearbyAgents.Num();
-	for(auto Itr = NearbyAgents.Array.begin(); Count > 0; --Count, ++Itr)
+	for(auto Itr = NearbyAgents.begin(); Count > 0; --Count, ++Itr)
 	{
 		const UAgent* OtherAgent = AgentsData[*Itr];
 		if(ensureMsgf(GetWorld(), TEXT("World not found!")))

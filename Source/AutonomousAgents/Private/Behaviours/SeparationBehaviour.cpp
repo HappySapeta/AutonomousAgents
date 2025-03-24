@@ -1,7 +1,7 @@
 ﻿
 #include "Behaviours/SeparationBehaviour.h"
 
-FVector USeparationBehaviour::CalculateSteerForce(const UAgent* AgentData, const TArray<UAgent*>& OtherActors, const float MaxSpeed) const
+FVector USeparationBehaviour::CalculateSteerForce(const UAgent* Agent, const TArray<UAgent*>& OtherAgents, const float MaxSpeed) const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(SeparationBehaviour::CalculateSteerForce)
 	if(!bIsEnabled)
@@ -13,25 +13,21 @@ FVector USeparationBehaviour::CalculateSteerForce(const UAgent* AgentData, const
 	FVector AvoidanceVector = FVector::ZeroVector;
 	uint32 NumAvoidableAgents = 0;
 	
-	const FRpSearchResults& NearbyAgents = AgentData->NearbyAgentIndices;
-	uint8 Count = NearbyAgents.Num();
-	for(auto Itr = NearbyAgents.Array.begin(); Count > 0; --Count, ++Itr)
+	for(uint32 NeighborIndex : Agent->NearbyAgentIndices)
 	{
-		const UAgent* OtherAgent = OtherActors[*Itr];
-		if(!CanOtherAgentAffect(AgentData, OtherAgent))
+		const UAgent* Neighbor = OtherAgents[NeighborIndex];
+		if(!CanOtherAgentAffect(Agent, Neighbor))
 		{
 			continue;
 		}
-
+		
 		++NumAvoidableAgents;
 		
-		const FVector& OtherAgentLocation = OtherAgent->Location;
+		const FVector& NeighborLocation = Neighbor->Location;
 		
-		FVector OtherAgentVector = AgentData->Location - OtherAgentLocation;
-		const float OtherAgentDistance = OtherAgentVector.Length();
-			
-		OtherAgentVector = OtherAgentVector.GetSafeNormal() / OtherAgentDistance;
-		AvoidanceVector += OtherAgentVector;
+		FVector NeighborVector = Agent->Location - NeighborLocation;
+		NeighborVector = NeighborVector.GetSafeNormal() / NeighborVector.Length();
+		AvoidanceVector += NeighborVector;
 	}
 
 	if(NumAvoidableAgents > 0)
@@ -39,7 +35,7 @@ FVector USeparationBehaviour::CalculateSteerForce(const UAgent* AgentData, const
 		AvoidanceVector /= NumAvoidableAgents;
 		AvoidanceVector = AvoidanceVector.GetSafeNormal() * MaxSpeed;
 
-		const FVector& SeparationManeuver = AvoidanceVector - AgentData->Velocity;
+		const FVector& SeparationManeuver = AvoidanceVector - Agent->Velocity;
 		SteeringInput = SeparationManeuver * Influence * InfluenceScale;
 	}
 	
