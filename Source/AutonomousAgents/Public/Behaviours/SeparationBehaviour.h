@@ -15,5 +15,5 @@ class AUTONOMOUSAGENTS_API USeparationBehaviour : public UBaseFlockingBehaviour,
 	GENERATED_BODY()
 
 public:
-	virtual FVector CalculateSteerForce(const UAgent* AgentData, const TArray<UAgent*>& OtherActors, const float MaxSpeed) const override;
+	virtual FVector CalculateSteerForce(const UAgent* Agent, const TArray<UAgent*>& OtherAgents, const float MaxSpeed) const override;
 };
